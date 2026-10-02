@@ -74,7 +74,7 @@ function RangeBar({ a }: { a: Analysis }) {
   const pos = (v: number) => `${((v - a.low) / span) * 100}%`;
   return (
     <div className="px-2 pb-6 pt-8">
-      <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg, var(--accent), var(--brand))", opacity: 0.35 }} />
+      <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg, var(--gold-a), var(--gold-b))", opacity: 0.55 }} />
       <div className="relative -mt-2 h-2">
         {a.rows.map((r) => (
           <span
@@ -178,7 +178,7 @@ export default function ProjectPage() {
       )}
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <input
-          className="w-full max-w-md bg-transparent text-3xl font-bold tracking-tight outline-none focus:underline"
+          className="display w-full max-w-md bg-transparent text-3xl font-bold outline-none focus:underline"
           value={project.name}
           onChange={(e) => set({ name: e.target.value })}
           aria-label="Analysis name"
@@ -343,9 +343,9 @@ export default function ProjectPage() {
 
         <aside className={`lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
           <div className="card overflow-hidden">
-            <div className="p-5" style={{ background: "linear-gradient(135deg, var(--brand), color-mix(in srgb, var(--brand) 55%, var(--accent)))", color: "var(--brand-ink)" }}>
+            <div className="p-5" style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderBottom: "1px solid color-mix(in srgb, var(--gold-b) 60%, transparent)" }}>
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Weighted value</div>
-              <div className="mt-1 text-4xl font-bold tracking-tight">{analysis.count ? usd(analysis.weighted) : "—"}</div>
+              <div className="display gold-text mt-1 text-4xl font-bold">{analysis.count ? usd(analysis.weighted) : "—"}</div>
               <div className="mt-1 text-sm opacity-80">{analysis.count} of {project.comps.length} comp{project.comps.length === 1 ? "" : "s"} used</div>
             </div>
             {analysis.count === 0 ? (

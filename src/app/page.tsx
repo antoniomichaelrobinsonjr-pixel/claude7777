@@ -23,11 +23,11 @@ export default function Home() {
     <div className="space-y-8">
       <section className="card relative overflow-hidden p-8 md:p-12">
         <div className="max-w-2xl space-y-4">
-          <span className="inline-block rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "var(--surface-2)", color: "var(--brand)" }}>
+          <span className="inline-block rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "var(--surface-2)", color: "var(--accent)" }}>
             Comparative market analysis
           </span>
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-            Price any property with <span style={{ color: "var(--brand)" }}>confidence</span>.
+          <h1 className="display text-4xl font-bold md:text-5xl">
+            Price any property with <span className="gold-ink">confidence</span>.
           </h1>
           <p className="muted text-lg">
             Enter your subject property and comparable sales, tune the adjustments, and get a clear, defensible value range in minutes.
@@ -36,10 +36,10 @@ export default function Home() {
             <button onClick={create} className="btn btn-primary">+ New analysis</button>
           </div>
         </div>
-        <svg className="pointer-events-none absolute -right-6 -top-6 hidden opacity-20 md:block" width="360" height="360" viewBox="0 0 512 512" aria-hidden>
-          <path d="M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z" fill="var(--brand)" />
+        <svg className="pointer-events-none absolute -right-6 -top-6 hidden opacity-25 md:block" width="360" height="360" viewBox="0 0 512 512" aria-hidden>
+          <path d="M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z" fill="var(--gold-b)" />
           <path d="M256 112 372 214H350V330H162V214H140Z" fill="var(--surface)" stroke="var(--surface)" strokeWidth="10" strokeLinejoin="round" />
-          <path d="M256 252 296 322 256 304 216 322Z" fill="var(--brand)" />
+          <path d="M256 252 296 322 256 304 216 322Z" fill="var(--gold-b)" />
         </svg>
       </section>
 
@@ -51,7 +51,7 @@ export default function Home() {
       {error && <p style={{ color: "var(--danger)" }}>{error}</p>}
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Your analyses</h2>
+        <h2 className="display text-2xl font-semibold">Your analyses</h2>
         {projects?.length === 0 && (
           <div className="card muted p-8 text-center">No analyses yet. Start your first one above.</div>
         )}
