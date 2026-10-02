@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteProject, listProjects, saveProject } from "@/lib/storage";
-import { newProject, type Project } from "@/lib/comps";
+import { analyze, newProject, usd, type Project } from "@/lib/comps";
 import { supabase } from "@/lib/supabase";
 
 export default function Home() {
@@ -20,31 +20,61 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Your analyses</h1>
-        <button onClick={create} className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">New analysis</button>
-      </div>
+    <div className="space-y-8">
+      <section className="card relative overflow-hidden p-8 md:p-12">
+        <div className="max-w-2xl space-y-4">
+          <span className="inline-block rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "var(--surface-2)", color: "var(--brand)" }}>
+            Comparative market analysis
+          </span>
+          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
+            Price any property with <span style={{ color: "var(--brand)" }}>confidence</span>.
+          </h1>
+          <p className="muted text-lg">
+            Enter your subject property and comparable sales, tune the adjustments, and get a clear, defensible value range in minutes.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button onClick={create} className="btn btn-primary">+ New analysis</button>
+          </div>
+        </div>
+        <svg className="pointer-events-none absolute -right-10 -top-10 hidden opacity-20 md:block" width="360" height="360" viewBox="0 0 32 32" aria-hidden>
+          <path d="M3 17 16 4l13 13v11a1 1 0 0 1-1 1h-7v-8h-10v8H4a1 1 0 0 1-1-1z" fill="var(--brand)" />
+        </svg>
+      </section>
+
       {!supabase && (
-        <p className="rounded bg-amber-50 p-3 text-sm text-amber-800">
-          Local mode: analyses are saved in this browser only. Set the Supabase variables in <code>.env.local</code> to enable accounts and cloud saving.
+        <p className="card px-4 py-3 text-sm" style={{ color: "var(--warn)" }}>
+          Local mode: analyses are saved in this browser only. Add Supabase keys in <code>.env.local</code> to enable accounts and cloud saving.
         </p>
       )}
-      {error && <p className="text-red-600">{error}</p>}
-      {projects?.length === 0 && <p className="text-slate-500">No analyses yet.</p>}
-      <ul className="divide-y rounded border bg-white">
-        {projects?.map((p) => (
-          <li key={p.id} className="flex items-center justify-between p-3">
-            <a href={`/project/${p.id}`} className="font-medium hover:underline">
-              {p.name} <span className="text-sm font-normal text-slate-500">{p.subject.address}</span>
-            </a>
-            <button
-              className="text-sm text-red-600 hover:underline"
-              onClick={async () => { if (confirm("Delete this analysis?")) { await deleteProject(p.id); load(); } }}
-            >Delete</button>
-          </li>
-        ))}
-      </ul>
+      {error && <p style={{ color: "var(--danger)" }}>{error}</p>}
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Your analyses</h2>
+        {projects?.length === 0 && (
+          <div className="card muted p-8 text-center">No analyses yet. Start your first one above.</div>
+        )}
+        <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {projects?.map((p) => {
+            const a = analyze(p);
+            return (
+              <li key={p.id} className="card group flex flex-col justify-between gap-4 p-5 transition hover:-translate-y-0.5">
+                <a href={`/project/${p.id}`} className="space-y-1">
+                  <div className="font-semibold group-hover:underline">{p.name}</div>
+                  <div className="muted truncate text-sm">{p.subject.address || "No address yet"}</div>
+                  <div className="pt-2 text-2xl font-bold" style={{ color: a.count ? "var(--ink)" : "var(--muted)" }}>
+                    {a.count ? usd(a.weighted) : "—"}
+                  </div>
+                  <div className="muted text-xs">{a.count} comp{a.count === 1 ? "" : "s"} used</div>
+                </a>
+                <button
+                  className="muted self-start text-xs hover:underline"
+                  onClick={async () => { if (confirm("Delete this analysis?")) { await deleteProject(p.id); load(); } }}
+                >Delete</button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }
