@@ -26,14 +26,16 @@ function Logo() {
         <defs>
           <linearGradient id="lm-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e1b4b" /><stop offset="1" stopColor="#0b1020" /></linearGradient>
           <linearGradient id="lm-pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5eead4" /><stop offset=".55" stopColor="#6ea8f5" /><stop offset="1" stopColor="#818cf8" /></linearGradient>
+          <linearGradient id="lm-door" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#99f6e4" /><stop offset="1" stopColor="#818cf8" /></linearGradient>
         </defs>
         <rect width="512" height="512" rx="115" fill="url(#lm-bg)" />
         <path d={PIN} fill="url(#lm-pin)" />
-        <path d="M256 136 340 302 256 262 172 302Z" fill="#0b1020" />
-        <g fill="none" stroke="#0b1020" strokeWidth="22" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M200 338 256 308 312 338" opacity=".7" />
-          <path d="M222 374 256 356 290 374" opacity=".4" />
+        <path d="M256 112 372 214H350V330H162V214H140Z" fill="#0b1020" stroke="#0b1020" strokeWidth="10" strokeLinejoin="round" />
+        <g fill="none" stroke="#99f6e4" strokeWidth="13" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M202 214 256 160 310 214" />
+          <path d="M222 242 256 208 290 242" opacity=".55" />
         </g>
+        <path d="M256 252 296 322 256 304 216 322Z" fill="url(#lm-door)" />
       </svg>
       <span className="text-lg font-bold tracking-tight">CompPilot</span>
     </span>

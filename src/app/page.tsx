@@ -38,7 +38,8 @@ export default function Home() {
         </div>
         <svg className="pointer-events-none absolute -right-6 -top-6 hidden opacity-20 md:block" width="360" height="360" viewBox="0 0 512 512" aria-hidden>
           <path d="M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z" fill="var(--brand)" />
-          <path d="M256 136 340 302 256 262 172 302Z" fill="var(--surface)" />
+          <path d="M256 112 372 214H350V330H162V214H140Z" fill="var(--surface)" stroke="var(--surface)" strokeWidth="10" strokeLinejoin="round" />
+          <path d="M256 252 296 322 256 304 216 322Z" fill="var(--brand)" />
         </svg>
       </section>
 
