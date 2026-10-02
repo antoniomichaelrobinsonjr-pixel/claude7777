@@ -183,7 +183,7 @@ export default function ProjectPage() {
           onChange={(e) => set({ name: e.target.value })}
           aria-label="Analysis name"
         />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="muted text-sm">{status}</span>
           <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
             {guided ? "Show all steps" : "Guide me"}
@@ -199,11 +199,11 @@ export default function ProjectPage() {
               key={t}
               onClick={() => setStep(i + 1)}
               aria-current={step === i + 1 ? "step" : undefined}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-2 py-2 text-sm font-semibold transition"
+              className="flex flex-1 items-center justify-center gap-1 rounded-xl px-1 py-2 text-sm font-semibold transition sm:gap-2 sm:px-2"
               style={step === i + 1 ? { background: "var(--brand)", color: "var(--brand-ink)" } : { color: step > i + 1 ? "var(--accent)" : "var(--muted)" }}
             >
               <span>{step > i + 1 ? "✓" : i + 1}</span>
-              <span className="hidden sm:inline">{t}</span>
+              <span className="text-xs sm:text-sm">{t}</span>
             </button>
           ))}
         </nav>
@@ -341,7 +341,7 @@ export default function ProjectPage() {
           )}
         </div>
 
-        <aside className={`lg:sticky lg:top-20 lg:self-start ${guided && step !== 4 ? "hidden lg:block print:block" : ""}`}>
+        <aside className={`lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
           <div className="card overflow-hidden">
             <div className="p-5" style={{ background: "linear-gradient(135deg, var(--brand), color-mix(in srgb, var(--brand) 55%, var(--accent)))", color: "var(--brand-ink)" }}>
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Weighted value</div>
