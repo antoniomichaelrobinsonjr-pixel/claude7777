@@ -17,12 +17,23 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+const PIN = "M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z";
+
 function Logo() {
   return (
     <span className="flex items-center gap-2">
-      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden>
-        <rect width="32" height="32" rx="9" fill="var(--brand)" />
-        <path d="M7 17 16 8l9 9v8a1 1 0 0 1-1 1h-5v-6h-6v6H8a1 1 0 0 1-1-1z" fill="var(--brand-ink)" opacity=".95" />
+      <svg width="30" height="30" viewBox="0 0 512 512" aria-hidden>
+        <defs>
+          <linearGradient id="lm-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e1b4b" /><stop offset="1" stopColor="#0b1020" /></linearGradient>
+          <linearGradient id="lm-pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5eead4" /><stop offset=".55" stopColor="#6ea8f5" /><stop offset="1" stopColor="#818cf8" /></linearGradient>
+        </defs>
+        <rect width="512" height="512" rx="115" fill="url(#lm-bg)" />
+        <path d={PIN} fill="url(#lm-pin)" />
+        <path d="M256 136 340 302 256 262 172 302Z" fill="#0b1020" />
+        <g fill="none" stroke="#0b1020" strokeWidth="22" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M200 338 256 308 312 338" opacity=".7" />
+          <path d="M222 374 256 356 290 374" opacity=".4" />
+        </g>
       </svg>
       <span className="text-lg font-bold tracking-tight">CompPilot</span>
     </span>

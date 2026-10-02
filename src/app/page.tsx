@@ -36,8 +36,9 @@ export default function Home() {
             <button onClick={create} className="btn btn-primary">+ New analysis</button>
           </div>
         </div>
-        <svg className="pointer-events-none absolute -right-10 -top-10 hidden opacity-20 md:block" width="360" height="360" viewBox="0 0 32 32" aria-hidden>
-          <path d="M3 17 16 4l13 13v11a1 1 0 0 1-1 1h-7v-8h-10v8H4a1 1 0 0 1-1-1z" fill="var(--brand)" />
+        <svg className="pointer-events-none absolute -right-6 -top-6 hidden opacity-20 md:block" width="360" height="360" viewBox="0 0 512 512" aria-hidden>
+          <path d="M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z" fill="var(--brand)" />
+          <path d="M256 136 340 302 256 262 172 302Z" fill="var(--surface)" />
         </svg>
       </section>
 
