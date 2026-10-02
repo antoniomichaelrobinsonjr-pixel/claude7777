@@ -17,16 +17,28 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const PIN = "M256 62c-94 0-166 70-166 158 0 116 166 236 166 236s166-120 166-236c0-88-72-158-166-158Z";
+const PIN = "M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z";
 
 function Logo() {
   return (
     <span className="flex items-center gap-2">
       <svg width="30" height="30" viewBox="0 0 512 512" aria-hidden>
-        <rect width="512" height="512" rx="115" fill="#4f46e5" />
-        <path d={PIN} fill="#fff" />
-        <path d="M256 130 360 224V326H152V224Z" fill="#4f46e5" stroke="#4f46e5" strokeWidth="12" strokeLinejoin="round" />
-        <path d="M256 238 292 316 256 298 220 316Z" fill="#fff" />
+        <defs>
+          <linearGradient id="lm-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#16204a" /><stop offset="1" stopColor="#070b1c" /></linearGradient>
+          <linearGradient id="lm-metal" x1=".1" y1="0" x2=".9" y2="1">
+            <stop offset="0" stopColor="#fff1c7" /><stop offset=".28" stopColor="#f0cf7e" /><stop offset=".55" stopColor="#c9973f" /><stop offset=".8" stopColor="#e9c46a" /><stop offset="1" stopColor="#9c6f24" />
+          </linearGradient>
+          <linearGradient id="lm-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".5" /><stop offset=".42" stopColor="#fff" stopOpacity="0" /></linearGradient>
+        </defs>
+        <rect width="512" height="512" rx="115" fill="url(#lm-bg)" />
+        <path d={PIN} fill="url(#lm-metal)" />
+        <path d={PIN} fill="url(#lm-shine)" />
+        <path d="M256 112 372 214H350V330H162V214H140Z" fill="#070b1c" stroke="#070b1c" strokeWidth="10" strokeLinejoin="round" />
+        <g fill="none" stroke="#fff1c7" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M202 214 256 160 310 214" />
+          <path d="M222 242 256 208 290 242" opacity=".5" />
+        </g>
+        <path d="M256 252 296 322 256 304 216 322Z" fill="url(#lm-metal)" />
       </svg>
       <span className="text-lg font-bold tracking-tight">CompPilot</span>
     </span>

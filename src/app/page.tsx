@@ -37,9 +37,9 @@ export default function Home() {
           </div>
         </div>
         <svg className="pointer-events-none absolute -right-6 -top-6 hidden opacity-20 md:block" width="360" height="360" viewBox="0 0 512 512" aria-hidden>
-          <path d="M256 62c-94 0-166 70-166 158 0 116 166 236 166 236s166-120 166-236c0-88-72-158-166-158Z" fill="var(--brand)" />
-          <path d="M256 130 360 224V326H152V224Z" fill="var(--surface)" stroke="var(--surface)" strokeWidth="12" strokeLinejoin="round" />
-          <path d="M256 238 292 316 256 298 220 316Z" fill="var(--brand)" />
+          <path d="M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z" fill="var(--brand)" />
+          <path d="M256 112 372 214H350V330H162V214H140Z" fill="var(--surface)" stroke="var(--surface)" strokeWidth="10" strokeLinejoin="round" />
+          <path d="M256 252 296 322 256 304 216 322Z" fill="var(--brand)" />
         </svg>
       </section>
 
