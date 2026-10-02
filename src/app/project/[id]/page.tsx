@@ -169,6 +169,14 @@ export default function ProjectPage() {
 
   return (
     <div className="space-y-6">
+      <header className="mb-2 hidden print:block">
+        <div className="muted text-xs font-semibold uppercase tracking-widest">CompPilot</div>
+        <h1 className="display text-3xl font-bold">Comparative Market Analysis</h1>
+        <p className="muted mt-1 text-sm">
+          {[project.name, project.name.includes(project.subject.address) ? "" : project.subject.address, new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })].filter(Boolean).join(" · ")}
+        </p>
+        <div className="mt-3 h-px" style={{ background: "linear-gradient(90deg, var(--gold-b), transparent)" }} />
+      </header>
       <Link href="/" className="muted no-print inline-block text-sm hover:underline">← All analyses</Link>
       {isBlank && (
         <div className="card no-print flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
@@ -341,7 +349,7 @@ export default function ProjectPage() {
           )}
         </div>
 
-        <aside className={`lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
+        <aside className={`print:order-first lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
           <div className="card overflow-hidden">
             <div className="p-5" style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderBottom: "1px solid color-mix(in srgb, var(--gold-b) 60%, transparent)" }}>
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Weighted value</div>

@@ -84,7 +84,19 @@ body {
 }
 
 @media print {
+  /* Always print on the light palette, even if the screen is in dark mode. */
+  :root {
+    --bg: #fff; --surface: #fffdf8; --surface-2: #f1ece0; --border: #e6dfcf;
+    --ink: #121a33; --muted: #6b6f80; --brand: #1c2754; --brand-ink: #f3dc9c;
+    --accent: #9a6f24; --gold-a: #f0cf7e; --gold-b: #c9973f; --gtext-a: #c9973f; --gtext-b: #8a6118;
+    --panel-a: #1c2754; --panel-b: #0d1330; --panel-ink: #f6e7b8; --warn: #b45309;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .no-print { display: none !important; }
-  body { background: white; color: black; }
-  .card { box-shadow: none; }
+  body { background: #fff; color: var(--ink); }
+  .card { box-shadow: none; break-inside: avoid; }
+  aside { position: static !important; }
+  /* Gradient-clipped text prints with box artifacts; use solid gold instead. */
+  .gold-text { background: none; color: var(--gold-a); -webkit-text-fill-color: var(--gold-a); }
+  .gold-ink { background: none; color: var(--gtext-b); -webkit-text-fill-color: var(--gtext-b); }
 }
