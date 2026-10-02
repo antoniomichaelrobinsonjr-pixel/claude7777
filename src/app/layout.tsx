@@ -1,9 +1,20 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import RegisterSW from "./register-sw";
 
 export const metadata: Metadata = {
   title: "CompPilot",
   description: "Guided comparable-sales market analysis",
+  appleWebApp: { capable: true, title: "CompPilot", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#4f46e5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0f1f" },
+  ],
+  width: "device-width",
+  initialScale: 1,
 };
 
 function Logo() {
@@ -22,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        <RegisterSW />
         <header className="no-print sticky top-0 z-10 border-b backdrop-blur" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 80%, transparent)" }}>
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <a href="/"><Logo /></a>
