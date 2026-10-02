@@ -1,31 +1,125 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, newComp, usd, type Comp, type Project, type Rates, type Subject } from "@/lib/comps";
+import { analyze, exampleData, newComp, usd, type Analysis, type Comp, type Project, type Rates, type Subject } from "@/lib/comps";
 
-const input = "w-full rounded border px-2 py-1";
-
-function Num({ value, onChange, step }: { value: number; onChange: (n: number) => void; step?: number }) {
+function Num({ label, value, onChange, step }: { label: string; value: number; onChange: (n: number) => void; step?: number }) {
   return (
-    <input
-      className={input}
-      type="number"
-      step={step}
-      value={Number.isFinite(value) ? value : 0}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-    />
+    <label className="field">
+      {label}
+      <input
+        className="input"
+        type="number"
+        inputMode="decimal"
+        step={step}
+        placeholder="0"
+        value={Number.isFinite(value) && value !== 0 ? value : ""}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      />
+    </label>
   );
 }
+
+/** Dollar input that shows thousands separators while you type. */
+function Money({ label, value, onChange, negative }: { label: string; value: number; onChange: (n: number) => void; negative?: boolean }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const fmt = (n: number) => (n === 0 ? "" : n.toLocaleString("en-US", { maximumFractionDigits: 2 }));
+  function handle(raw: string) {
+    const neg = negative && raw.trim().startsWith("-");
+    const digits = raw.replace(/[^0-9.]/g, "");
+    const dot = digits.indexOf(".");
+    const int = (dot < 0 ? digits : digits.slice(0, dot)).replace(/^0+(?=\d)/, "");
+    const dec = dot < 0 ? null : digits.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+    const text = (neg ? "-" : "") + (int ? Number(int).toLocaleString("en-US") : neg || dec !== null ? "0" : "") + (dec !== null ? "." + dec : "");
+    setDraft(text);
+    onChange(parseFloat(text.replace(/,/g, "")) || 0);
+  }
+  return (
+    <label className="field">
+      {label}
+      <div className="relative">
+        <span className="muted pointer-events-none absolute left-3 top-1/2 mt-0.5 -translate-y-1/2 text-sm">$</span>
+        <input
+          className="input pl-6"
+          inputMode={negative ? "text" : "decimal"}
+          placeholder="0"
+          value={draft ?? fmt(value)}
+          onFocus={(e) => { setDraft(fmt(value)); e.target.select(); }}
+          onChange={(e) => handle(e.target.value)}
+          onBlur={() => setDraft(null)}
+        />
+      </div>
+    </label>
+  );
+}
+
+function Step({ n, title, hint }: { n: number; title: string; hint?: string }) {
+  return (
+    <div className="mb-4 flex items-start gap-3">
+      <span className="step">{n}</span>
+      <div>
+        <h2 className="font-semibold leading-6">{title}</h2>
+        {hint && <p className="muted text-sm">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Horizontal range bar: every comp's adjusted price as a dot, weighted value as a marker. */
+function RangeBar({ a }: { a: Analysis }) {
+  const span = Math.max(a.high - a.low, 1);
+  const pos = (v: number) => `${((v - a.low) / span) * 100}%`;
+  return (
+    <div className="px-2 pb-6 pt-8">
+      <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg, var(--gold-a), var(--gold-b))", opacity: 0.55 }} />
+      <div className="relative -mt-2 h-2">
+        {a.rows.map((r) => (
+          <span
+            key={r.comp.id}
+            title={`${r.comp.address || "Comp"}: ${usd(r.adjustedPrice)}`}
+            className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+            style={{ left: pos(r.adjustedPrice), background: "var(--surface)", borderColor: "var(--brand)" }}
+          />
+        ))}
+        <span className="absolute -top-7 -translate-x-1/2 text-center text-[10px] font-semibold uppercase" style={{ left: `clamp(16%, ${a.high > a.low ? pos(a.weighted) : "50%"}, 84%)`, color: "var(--accent)" }}>
+          ▼ Weighted
+        </span>
+      </div>
+      <div className="muted mt-3 flex justify-between text-xs">
+        <span>{usd(a.low)}</span>
+        <span>{usd(a.high)}</span>
+      </div>
+    </div>
+  );
+}
+
+const isBlankProject = (p: Project) =>
+  !p.subject.address && !p.subject.sqft && p.comps.every((c) => !c.salePrice && !c.address);
+
+const STEPS = ["Subject", "Rates", "Comps", "Result"];
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [status, setStatus] = useState("");
+  const [missing, setMissing] = useState(false);
+  const [removed, setRemoved] = useState<{ comp: Comp; index: number } | null>(null);
+  const [guided, setGuided] = useState(false);
+  const [step, setStep] = useState(1);
   const loaded = useRef(false);
 
   useEffect(() => {
-    getProject(id).then((p) => { setProject(p); loaded.current = true; });
+    getProject(id)
+      .then((p) => {
+        setProject(p);
+        setMissing(!p);
+        loaded.current = !!p;
+        if (p && isBlankProject(p)) setGuided(true);
+      })
+      .catch(() => setMissing(true));
   }, [id]);
 
   // Debounced autosave.
@@ -33,125 +127,259 @@ export default function ProjectPage() {
     if (!project || !loaded.current) return;
     setStatus("Saving…");
     const t = setTimeout(() => {
-      saveProject(project).then(() => setStatus("Saved")).catch((e) => setStatus(`Save failed: ${e.message}`));
+      saveProject(project).then(() => setStatus("Saved ✓")).catch((e) => setStatus(`Save failed: ${e.message}`));
     }, 600);
     return () => clearTimeout(t);
   }, [project]);
 
   const analysis = useMemo(() => (project ? analyze(project) : null), [project]);
 
-  if (!project || !analysis) return <p className="text-slate-500">Loading…</p>;
+  if (missing) {
+    return (
+      <div className="card space-y-3 p-8 text-center">
+        <h1 className="text-xl font-semibold">We couldn't find that analysis</h1>
+        <p className="muted">It may have been deleted, or it was saved in a different browser or account.</p>
+        <Link href="/" className="btn btn-primary">Back to your analyses</Link>
+      </div>
+    );
+  }
+  if (!project || !analysis) return <p className="muted">Loading…</p>;
+
+  const isBlank = isBlankProject(project);
+  // In guided mode only the current step shows; printing always shows everything.
+  const show = (n: number) => (!guided || step === n ? "" : "hidden print:block");
+  const stepHint =
+    step === 1 && !project.subject.sqft ? "Add the square footage to continue." :
+    step === 3 && analysis.count === 0 ? "Enter a sale price for at least one comp." : "";
+  const canNext = !stepHint;
 
   const set = (patch: Partial<Project>) => setProject({ ...project, ...patch });
   const setSubject = (patch: Partial<Subject>) => set({ subject: { ...project.subject, ...patch } });
   const setRates = (patch: Partial<Rates>) => set({ rates: { ...project.rates, ...patch } });
+  const duplicateComp = (cid: string) => {
+    const i = project.comps.findIndex((c) => c.id === cid);
+    if (i < 0) return;
+    const copy = { ...project.comps[i], id: crypto.randomUUID() };
+    const next = [...project.comps];
+    next.splice(i + 1, 0, copy);
+    set({ comps: next });
+  };
   const setComp = (cid: string, patch: Partial<Comp>) =>
     set({ comps: project.comps.map((c) => (c.id === cid ? { ...c, ...patch } : c)) });
 
   return (
     <div className="space-y-6">
-      <div className="no-print flex items-center justify-between gap-4">
+      <header className="mb-2 hidden print:block">
+        <div className="muted text-xs font-semibold uppercase tracking-widest">CompPilot</div>
+        <h1 className="display text-3xl font-bold">Comparative Market Analysis</h1>
+        <p className="muted mt-1 text-sm">
+          {[project.name, project.name.includes(project.subject.address) ? "" : project.subject.address, new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })].filter(Boolean).join(" · ")}
+        </p>
+        <div className="mt-3 h-px" style={{ background: "linear-gradient(90deg, var(--gold-b), transparent)" }} />
+      </header>
+      <Link href="/" className="muted no-print inline-block text-sm hover:underline">← All analyses</Link>
+      {isBlank && (
+        <div className="card no-print flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+          <span>Fill in the steps below, or just exploring?</span>
+          <button className="btn" onClick={() => set(exampleData())}>Load example data</button>
+        </div>
+      )}
+      <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <input
-          className="w-full max-w-md rounded border bg-white px-2 py-1 text-2xl font-semibold"
+          className="display w-full max-w-md bg-transparent text-3xl font-bold outline-none focus:underline"
           value={project.name}
           onChange={(e) => set({ name: e.target.value })}
+          aria-label="Analysis name"
         />
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-500">{status}</span>
-          <button onClick={() => window.print()} className="rounded border bg-white px-3 py-1 hover:bg-slate-100">Print / save PDF</button>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="muted text-sm">{status}</span>
+          <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
+            {guided ? "Show all steps" : "Guide me"}
+          </button>
+          <button onClick={() => window.print()} className="btn">Print / save PDF</button>
         </div>
       </div>
 
-      <section className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">1. Subject property</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <label className="col-span-2 text-sm">Address
-            <input className={input} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
-          </label>
-          <label className="text-sm">Sq ft<Num value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} /></label>
-          <label className="text-sm">Beds<Num value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} /></label>
-          <label className="text-sm">Baths<Num step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} /></label>
-          <label className="text-sm">Year built<Num value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} /></label>
-        </div>
-      </section>
+      {guided && (
+        <nav className="no-print card flex items-center gap-1 p-2" aria-label="Progress">
+          {STEPS.map((t, i) => (
+            <button
+              key={t}
+              onClick={() => setStep(i + 1)}
+              aria-current={step === i + 1 ? "step" : undefined}
+              className="flex flex-1 items-center justify-center gap-1 rounded-xl px-1 py-2 text-sm font-semibold transition sm:gap-2 sm:px-2"
+              style={step === i + 1 ? { background: "var(--brand)", color: "var(--brand-ink)" } : { color: step > i + 1 ? "var(--accent)" : "var(--muted)" }}
+            >
+              <span>{step > i + 1 ? "✓" : i + 1}</span>
+              <span className="text-xs sm:text-sm">{t}</span>
+            </button>
+          ))}
+        </nav>
+      )}
 
-      <section className="no-print rounded border bg-white p-4">
-        <h2 className="mb-1 font-semibold">2. Adjustment rates</h2>
-        <p className="mb-3 text-sm text-slate-500">Dollar value of one unit of difference. Edit to match your market; none of these are defaults you should rely on.</p>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <label className="text-sm">$ per sq ft<Num value={project.rates.perSqft} onChange={(n) => setRates({ perSqft: n })} /></label>
-          <label className="text-sm">$ per bedroom<Num value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} /></label>
-          <label className="text-sm">$ per bath<Num value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} /></label>
-          <label className="text-sm">$ per year of age<Num value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} /></label>
-        </div>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="space-y-6">
+          <section className={`card p-5 ${show(1)}`}>
+            <Step n={1} title="Subject property" hint="The home you are pricing." />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <label className="field col-span-2 md:col-span-4">Address
+                <input className="input" value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
+              </label>
+              <Num label="Sq ft" value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
+              <Num label="Beds" value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />
+              <Num label="Baths" step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} />
+              <Num label="Year built" value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} />
+            </div>
+          </section>
 
-      <section className="rounded border bg-white p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">3. Comparable sales</h2>
-          <button className="no-print rounded bg-blue-600 px-3 py-1 text-white" onClick={() => set({ comps: [...project.comps, newComp()] })}>Add comp</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-sm">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th className="no-print p-1">Use</th><th className="p-1">Address</th><th className="p-1">Sale price</th>
-                <th className="p-1">Sale date</th><th className="p-1">Sq ft</th><th className="p-1">Beds</th><th className="p-1">Baths</th>
-                <th className="p-1">Year</th><th className="p-1">Miles</th><th className="p-1">Other adj $</th>
-                <th className="p-1 text-right">Net adj</th><th className="p-1 text-right">Adjusted</th><th className="no-print p-1" />
-              </tr>
-            </thead>
-            <tbody>
-              {project.comps.map((c) => {
-                const row = analysis.rows.find((r) => r.comp.id === c.id);
-                return (
-                  <tr key={c.id} className={c.included ? "" : "opacity-50"}>
-                    <td className="no-print p-1"><input type="checkbox" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /></td>
-                    <td className="p-1"><input className={input} value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} /></td>
-                    <td className="p-1"><Num value={c.salePrice} onChange={(n) => setComp(c.id, { salePrice: n })} /></td>
-                    <td className="p-1"><input className={input} type="date" value={c.saleDate} onChange={(e) => setComp(c.id, { saleDate: e.target.value })} /></td>
-                    <td className="p-1"><Num value={c.sqft} onChange={(n) => setComp(c.id, { sqft: n })} /></td>
-                    <td className="p-1"><Num value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} /></td>
-                    <td className="p-1"><Num step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} /></td>
-                    <td className="p-1"><Num value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} /></td>
-                    <td className="p-1"><Num step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n })} /></td>
-                    <td className="p-1"><Num value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} /></td>
-                    <td className="p-1 text-right">{row ? usd(row.netAdj) : "—"}{row && row.grossAdjPct > 25 && <span title="Gross adjustments over 25% of sale price" className="ml-1 text-amber-600">⚠</span>}</td>
-                    <td className="p-1 text-right font-medium">{row ? usd(row.adjustedPrice) : "—"}</td>
-                    <td className="no-print p-1"><button className="text-red-600" onClick={() => set({ comps: project.comps.filter((x) => x.id !== c.id) })}>✕</button></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {project.comps.length === 0 && <p className="mt-2 text-slate-500">Add at least three comps for a meaningful range.</p>}
-      </section>
+          <section className={`card no-print p-5 ${show(2)}`}>
+            <Step n={2} title="Adjustment rates" hint="Dollar value of one unit of difference. Set these from your market; the starting numbers are placeholders." />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Money label="Per sq ft" value={project.rates.perSqft} onChange={(n) => setRates({ perSqft: n })} />
+              <Money label="Per bedroom" value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} />
+              <Money label="Per bath" value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} />
+              <Money label="Per year of age" value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />
+            </div>
+          </section>
 
-      <section className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">4. Result</h2>
-        {analysis.count === 0 ? (
-          <p className="text-slate-500">Include at least one comp to see a value range.</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            {[
-              ["Low", analysis.low],
-              ["Median", analysis.median],
-              ["Mean", analysis.mean],
-              ["Weighted", analysis.weighted],
-              ["High", analysis.high],
-            ].map(([label, v]) => (
-              <div key={label as string} className="rounded bg-slate-50 p-3">
-                <div className="text-xs uppercase text-slate-500">{label}</div>
-                <div className="text-xl font-semibold">{usd(v as number)}</div>
+          {guided && step === 4 && (
+            <section className="card no-print overflow-hidden">
+              <h2 className="p-5 font-semibold">Your comps at a glance</h2>
+              <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
+                {analysis.rows.map((r) => (
+                  <li key={r.comp.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm" style={{ borderColor: "var(--border)" }}>
+                    <span className="truncate">{r.comp.address || "Unnamed comp"}</span>
+                    <span className="muted whitespace-nowrap">{usd(r.comp.salePrice)} → <strong style={{ color: "var(--ink)" }}>{usd(r.adjustedPrice)}</strong></span>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted p-5 text-sm">Not right? Use the steps above to edit anything — the value updates instantly.</p>
+            </section>
+          )}
+
+          <section className={`space-y-3 ${show(3)}`}>
+            <div className="flex items-center justify-between">
+              <Step n={3} title="Comparable sales" hint="Recent sales of similar nearby homes." />
+              <button className="btn btn-primary no-print" onClick={() => set({ comps: [...project.comps, newComp()] })}>+ Add comp</button>
+            </div>
+            {removed && (
+              <div className="card no-print flex items-center justify-between gap-3 px-4 py-2 text-sm">
+                <span>Comp removed.</span>
+                <button
+                  className="font-semibold hover:underline"
+                  style={{ color: "var(--brand)" }}
+                  onClick={() => {
+                    const next = [...project.comps];
+                    next.splice(removed.index, 0, removed.comp);
+                    set({ comps: next });
+                    setRemoved(null);
+                  }}
+                >Undo</button>
               </div>
-            ))}
+            )}
+            {project.comps.length === 0 && (
+              <div className="card muted p-8 text-center">Add at least three comps for a meaningful range.</div>
+            )}
+            {project.comps.map((c, i) => {
+              const row = analysis.rows.find((r) => r.comp.id === c.id);
+              return (
+                <div key={c.id} className="card p-5 transition" style={{ opacity: c.included ? 1 : 0.55 }}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold">Comp {i + 1}</span>
+                    <div className="no-print flex items-center gap-4 text-sm">
+                      <label className="flex items-center gap-2">
+                        <input type="checkbox" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> Use
+                      </label>
+                      <button className="muted hover:underline" onClick={() => duplicateComp(c.id)}>Duplicate</button>
+                      <button
+                        className="muted hover:underline"
+                        onClick={() => {
+                          setRemoved({ comp: c, index: i });
+                          set({ comps: project.comps.filter((x) => x.id !== c.id) });
+                        }}
+                      >Remove</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <label className="field col-span-2">Address
+                      <input className="input" value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
+                    </label>
+                    <Money label="Sale price" value={c.salePrice} onChange={(n) => setComp(c.id, { salePrice: n })} />
+                    <label className="field">Sale date
+                      <input className="input" type="date" value={c.saleDate} onChange={(e) => setComp(c.id, { saleDate: e.target.value })} />
+                    </label>
+                    <Num label="Sq ft" value={c.sqft} onChange={(n) => setComp(c.id, { sqft: n })} />
+                    <Num label="Beds" value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} />
+                    <Num label="Baths" step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} />
+                    <Num label="Year built" value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />
+                    <Num label="Distance (mi)" step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n })} />
+                    <Money label="Other adjustment" negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
+                  </div>
+                  {c.included && c.salePrice <= 0 && (
+                    <p className="mt-4 text-sm" style={{ color: "var(--warn)" }}>Enter a sale price to include this comp in the value.</p>
+                  )}
+                  {row && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "var(--surface-2)" }}>
+                      <span className="muted">
+                        Net adjustment <strong style={{ color: "var(--ink)" }}>{usd(row.netAdj)}</strong>
+                        {row.grossAdjPct > 25 && (
+                          <span className="ml-2" style={{ color: "var(--warn)" }} title="Gross adjustments over 25% of sale price">⚠ heavy adjustments</span>
+                        )}
+                      </span>
+                      <span>Adjusted price <strong className="text-lg">{usd(row.adjustedPrice)}</strong></span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </section>
+
+          {guided && (
+            <div className="no-print flex items-center justify-between gap-3">
+              <button className="btn" disabled={step === 1} onClick={() => setStep(step - 1)} style={step === 1 ? { visibility: "hidden" } : undefined}>← Back</button>
+              <span className="text-sm" style={{ color: "var(--warn)" }}>{step < 4 ? stepHint : ""}</span>
+              {step < 4 ? (
+                <button className="btn btn-primary" disabled={!canNext} style={!canNext ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => setStep(step + 1)}>
+                  {step === 3 ? "See result →" : "Next →"}
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => window.print()}>Print / save PDF</button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <aside className={`print:order-first lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
+          <div className="card overflow-hidden">
+            <div className="p-5" style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderBottom: "1px solid color-mix(in srgb, var(--gold-b) 60%, transparent)" }}>
+              <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Weighted value</div>
+              <div className="display gold-text mt-1 text-4xl font-bold">{analysis.count ? usd(analysis.weighted) : "—"}</div>
+              <div className="mt-1 text-sm opacity-80">{analysis.count} of {project.comps.length} comp{project.comps.length === 1 ? "" : "s"} used</div>
+            </div>
+            {analysis.count === 0 ? (
+              <p className="muted p-5 text-sm">Enter a sale price for at least one comp to see a value range.</p>
+            ) : (
+              <>
+                <RangeBar a={analysis} />
+                <dl className="grid grid-cols-3 gap-2 px-5 pb-5 text-center">
+                  {([["Low", analysis.low], ["Median", analysis.median], ["High", analysis.high]] as const).map(([l, v]) => (
+                    <div key={l} className="rounded-xl p-2" style={{ background: "var(--surface-2)" }}>
+                      <dt className="muted text-[10px] font-semibold uppercase">{l}</dt>
+                      <dd className="text-sm font-bold">{usd(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+            <p className="muted border-t px-5 py-3 text-xs leading-5" style={{ borderColor: "var(--border)" }}>
+              <strong>How it's calculated:</strong> each comp's price is adjusted toward your subject, then averaged. Comps needing fewer adjustments count more.
+            </p>
+            <p className="muted border-t p-4 text-[11px] leading-4" style={{ borderColor: "var(--border)" }}>
+              Comparative market analysis for discussion only. Not an appraisal; not for lending decisions.
+            </p>
           </div>
-        )}
-        <p className="mt-4 text-xs text-slate-500">
-          This is a comparative market analysis for discussion purposes only. It is not an appraisal and must not be used for lending decisions.
-        </p>
-      </section>
+        </aside>
+      </div>
     </div>
   );
 }

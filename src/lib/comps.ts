@@ -92,7 +92,7 @@ export interface Analysis {
 
 export function analyze(project: Pick<Project, "subject" | "comps" | "rates">): Analysis {
   const rows = project.comps
-    .filter((c) => c.included)
+    .filter((c) => c.included && c.salePrice > 0)
     .map((c) => adjustComp(project.subject, c, project.rates));
   if (rows.length === 0) return { rows, count: 0, low: 0, high: 0, mean: 0, median: 0, weighted: 0 };
   const prices = rows.map((r) => r.adjustedPrice).sort((a, b) => a - b);
@@ -125,7 +125,7 @@ export function newProject(): Project {
     id: crypto.randomUUID(),
     name: "Untitled analysis",
     subject: { address: "", sqft: 0, beds: 0, baths: 0, yearBuilt: 0 },
-    comps: [],
+    comps: [newComp(), newComp(), newComp()],
     rates: { ...DEFAULT_RATES },
     updatedAt: new Date().toISOString(),
   };
@@ -133,3 +133,18 @@ export function newProject(): Project {
 
 export const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+/** Illustrative data so a new user can see the tool working before typing their own. */
+export function exampleData(): Pick<Project, "name" | "subject" | "comps"> {
+  const mk = (address: string, salePrice: number, saleDate: string, sqft: number, beds: number, baths: number, yearBuilt: number, distanceMi: number): Comp =>
+    ({ ...newComp(), address, salePrice, saleDate, sqft, beds, baths, yearBuilt, distanceMi });
+  return {
+    name: "Example: 12 Maple St",
+    subject: { address: "12 Maple St", sqft: 1850, beds: 3, baths: 2, yearBuilt: 1998 },
+    comps: [
+      mk("48 Oak Ave", 412000, "2026-08-14", 1790, 3, 2, 1995, 0.3),
+      mk("7 Birch Ln", 436000, "2026-07-02", 1920, 3, 2.5, 2001, 0.5),
+      mk("203 Pine Rd", 398000, "2026-09-05", 1750, 3, 2, 1990, 0.8),
+    ],
+  };
+}
