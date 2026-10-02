@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, newComp, usd, type Analysis, type Comp, type Project, type Rates, type Subject } from "@/lib/comps";
+import { analyze, exampleData, newComp, usd, type Analysis, type Comp, type Project, type Rates, type Subject } from "@/lib/comps";
 
 function Num({ label, value, onChange, step }: { label: string; value: number; onChange: (n: number) => void; step?: number }) {
   return (
@@ -11,8 +12,11 @@ function Num({ label, value, onChange, step }: { label: string; value: number; o
       <input
         className="input"
         type="number"
+        inputMode="decimal"
         step={step}
-        value={Number.isFinite(value) ? value : 0}
+        placeholder="0"
+        value={Number.isFinite(value) && value !== 0 ? value : ""}
+        onFocus={(e) => e.target.select()}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
       />
     </label>
@@ -63,10 +67,14 @@ export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [status, setStatus] = useState("");
+  const [missing, setMissing] = useState(false);
+  const [removed, setRemoved] = useState<{ comp: Comp; index: number } | null>(null);
   const loaded = useRef(false);
 
   useEffect(() => {
-    getProject(id).then((p) => { setProject(p); loaded.current = true; });
+    getProject(id)
+      .then((p) => { setProject(p); setMissing(!p); loaded.current = !!p; })
+      .catch(() => setMissing(true));
   }, [id]);
 
   // Debounced autosave.
@@ -81,7 +89,18 @@ export default function ProjectPage() {
 
   const analysis = useMemo(() => (project ? analyze(project) : null), [project]);
 
+  if (missing) {
+    return (
+      <div className="card space-y-3 p-8 text-center">
+        <h1 className="text-xl font-semibold">We couldn't find that analysis</h1>
+        <p className="muted">It may have been deleted, or it was saved in a different browser or account.</p>
+        <Link href="/" className="btn btn-primary">Back to your analyses</Link>
+      </div>
+    );
+  }
   if (!project || !analysis) return <p className="muted">Loading…</p>;
+
+  const isBlank = !project.subject.address && !project.subject.sqft && project.comps.every((c) => !c.salePrice && !c.address);
 
   const set = (patch: Partial<Project>) => setProject({ ...project, ...patch });
   const setSubject = (patch: Partial<Subject>) => set({ subject: { ...project.subject, ...patch } });
@@ -91,6 +110,13 @@ export default function ProjectPage() {
 
   return (
     <div className="space-y-6">
+      <Link href="/" className="muted no-print inline-block text-sm hover:underline">← All analyses</Link>
+      {isBlank && (
+        <div className="card no-print flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+          <span>Fill in the three steps below, or just exploring?</span>
+          <button className="btn" onClick={() => set(exampleData())}>Load example data</button>
+        </div>
+      )}
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <input
           className="w-full max-w-md bg-transparent text-3xl font-bold tracking-tight outline-none focus:underline"
@@ -134,6 +160,21 @@ export default function ProjectPage() {
               <Step n={3} title="Comparable sales" hint="Recent sales of similar nearby homes." />
               <button className="btn btn-primary no-print" onClick={() => set({ comps: [...project.comps, newComp()] })}>+ Add comp</button>
             </div>
+            {removed && (
+              <div className="card no-print flex items-center justify-between gap-3 px-4 py-2 text-sm">
+                <span>Comp removed.</span>
+                <button
+                  className="font-semibold hover:underline"
+                  style={{ color: "var(--brand)" }}
+                  onClick={() => {
+                    const next = [...project.comps];
+                    next.splice(removed.index, 0, removed.comp);
+                    set({ comps: next });
+                    setRemoved(null);
+                  }}
+                >Undo</button>
+              </div>
+            )}
             {project.comps.length === 0 && (
               <div className="card muted p-8 text-center">Add at least three comps for a meaningful range.</div>
             )}
@@ -147,7 +188,13 @@ export default function ProjectPage() {
                       <label className="flex items-center gap-2">
                         <input type="checkbox" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> Use
                       </label>
-                      <button className="muted hover:underline" onClick={() => set({ comps: project.comps.filter((x) => x.id !== c.id) })}>Remove</button>
+                      <button
+                        className="muted hover:underline"
+                        onClick={() => {
+                          setRemoved({ comp: c, index: i });
+                          set({ comps: project.comps.filter((x) => x.id !== c.id) });
+                        }}
+                      >Remove</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -165,6 +212,9 @@ export default function ProjectPage() {
                     <Num label="Distance (mi)" step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n })} />
                     <Num label="Other adj ($)" value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
                   </div>
+                  {c.included && c.salePrice <= 0 && (
+                    <p className="mt-4 text-sm" style={{ color: "var(--warn)" }}>Enter a sale price to include this comp in the value.</p>
+                  )}
                   {row && (
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "var(--surface-2)" }}>
                       <span className="muted">
@@ -187,10 +237,10 @@ export default function ProjectPage() {
             <div className="p-5" style={{ background: "linear-gradient(135deg, var(--brand), color-mix(in srgb, var(--brand) 55%, var(--accent)))", color: "var(--brand-ink)" }}>
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Weighted value</div>
               <div className="mt-1 text-4xl font-bold tracking-tight">{analysis.count ? usd(analysis.weighted) : "—"}</div>
-              <div className="mt-1 text-sm opacity-80">{analysis.count} comp{analysis.count === 1 ? "" : "s"} used</div>
+              <div className="mt-1 text-sm opacity-80">{analysis.count} of {project.comps.length} comp{project.comps.length === 1 ? "" : "s"} used</div>
             </div>
             {analysis.count === 0 ? (
-              <p className="muted p-5 text-sm">Include at least one comp to see a value range.</p>
+              <p className="muted p-5 text-sm">Enter a sale price for at least one comp to see a value range.</p>
             ) : (
               <>
                 <RangeBar a={analysis} />
@@ -204,6 +254,9 @@ export default function ProjectPage() {
                 </dl>
               </>
             )}
+            <p className="muted border-t px-5 py-3 text-xs leading-5" style={{ borderColor: "var(--border)" }}>
+              <strong>How it's calculated:</strong> each comp's price is adjusted toward your subject, then averaged. Comps needing fewer adjustments count more.
+            </p>
             <p className="muted border-t p-4 text-[11px] leading-4" style={{ borderColor: "var(--border)" }}>
               Comparative market analysis for discussion only. Not an appraisal; not for lending decisions.
             </p>
