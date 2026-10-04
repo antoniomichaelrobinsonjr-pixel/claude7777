@@ -6,16 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-strip-types --test src/lib/*.test.ts src/i18n/*.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/*.test.ts src/i18n/*.test.ts src/billing/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "leaflet": "^1.9.4",
     "next": "^14.2.15",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "server-only": "^0.0.1",
+    "stripe": "^23.0.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
