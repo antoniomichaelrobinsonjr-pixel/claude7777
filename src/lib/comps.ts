@@ -1,9 +1,45 @@
+/** A geocoded location, saved with the exact address text it was found for. */
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+  /** The address the geocoder says it matched, so a wrong match is visible. */
+  label: string;
+  /** The address text that was sent; the point is ignored if the address is edited afterwards. */
+  query: string;
+  /** False when the geocoder only matched a street, suburb or city rather than the building. */
+  precise: boolean;
+}
+
+/**
+ * What is being priced.
+ * - home: a house, sized in square feet.
+ * - apartment / condo: a unit in a building. Floor, parking and the monthly building or association fee also move the price.
+ * - estate: a luxury estate. Living area in square feet plus the grounds in acres; few comparable sales, so wider search.
+ * - land: sized in acres, with no beds, baths or age.
+ */
+export type PropertyKind = "home" | "apartment" | "condo" | "estate" | "land";
+export const PROPERTY_KINDS: PropertyKind[] = ["home", "apartment", "condo", "estate", "land"];
+
 export interface Subject {
   address: string;
+  /** Home or land; missing means home. */
+  kind?: PropertyKind;
+  /** Size: square feet for a home, acres for land. */
   sqft: number;
   beds: number;
   baths: number;
   yearBuilt: number;
+  /** Apartments and condos: the floor the unit is on. */
+  floor?: number;
+  /** Apartments and condos: parking spaces that come with the unit. */
+  parking?: number;
+  /** Apartments and condos: the monthly building or association fee, in dollars. */
+  monthlyFee?: number;
+  /** Estates: the grounds, in acres. */
+  acres?: number;
+  geo?: GeoPoint;
+  /** ISO 3166-1 country code, used to show that country's market data. */
+  country?: string;
 }
 
 export interface Comp {
@@ -15,10 +51,19 @@ export interface Comp {
   beds: number;
   baths: number;
   yearBuilt: number;
+  floor?: number;
+  parking?: number;
+  monthlyFee?: number;
+  acres?: number;
   distanceMi: number;
   /** Manual dollar adjustment for condition, lot, upgrades, etc. */
   otherAdj: number;
   included: boolean;
+  /** Where this sale came from (MLS number, county record, ...). Shown in the report. */
+  source?: string;
+  geo?: GeoPoint;
+  /** True when distanceMi was calculated from geocoded coordinates rather than typed in. */
+  distanceComputed?: boolean;
 }
 
 /** Dollar value of one unit of difference between subject and comp. */
@@ -27,6 +72,14 @@ export interface Rates {
   perBed: number;
   perBath: number;
   perYear: number;
+  /** Apartments and condos: dollars per floor higher. */
+  perFloor?: number;
+  /** Apartments and condos: dollars per parking space. */
+  perParking?: number;
+  /** Apartments and condos: dollars of value lost per $1 of extra monthly fee. */
+  perFee?: number;
+  /** Estates: dollars per acre of grounds. */
+  perAcre?: number;
 }
 
 export interface Project {
@@ -36,9 +89,35 @@ export interface Project {
   comps: Comp[];
   rates: Rates;
   updatedAt: string;
+  preparedBy?: string;
+  preparedFor?: string;
+  /** Where the adjustment rates came from (paired sales study, appraiser input, ...). */
+  ratesBasis?: string;
+  /** Relative importance of each reliability check (0-10). Missing = 1 (equal weighting). */
+  checkWeights?: Partial<Record<"count" | "recency" | "proximity" | "similarity" | "consistency", number>>;
+  /** The price being asked (buyer) or planned (seller), for the audience reports. */
+  askingPrice?: number;
+  /** Seller costs in percent of the price, and any loan to pay off, for the net-proceeds estimate. */
+  sellerCosts?: { agentPct: number; otherPct: number; payoff: number };
+  /** What the owner paid and when, for the ownership report. */
+  ownership?: { purchasePrice: number; purchaseDate: string; improvements: number };
+  /** Annual growth rates (percent) for the low, middle and high scenarios in the ownership report. */
+  growth?: [number, number, number];
 }
 
 export const DEFAULT_RATES: Rates = { perSqft: 60, perBed: 5000, perBath: 7500, perYear: 500 };
+/** Placeholder rates for land: only the size rate (dollars per acre) is used. */
+export const DEFAULT_LAND_RATES: Rates = { perSqft: 8000, perBed: 0, perBath: 0, perYear: 0 };
+/** Placeholder rates for apartments and condos. Replace them with your market's. */
+export const DEFAULT_UNIT_RATES: Rates = { perSqft: 120, perBed: 8000, perBath: 9000, perYear: 400, perFloor: 1500, perParking: 20000, perFee: 100 };
+/** Placeholder rates for luxury estates. Replace them with your market's. */
+export const DEFAULT_ESTATE_RATES: Rates = { perSqft: 250, perBed: 25000, perBath: 35000, perYear: 1500, perAcre: 40000 };
+
+export const isLand = (s: { kind?: PropertyKind }) => s.kind === "land";
+export const isUnit = (s: { kind?: PropertyKind }) => s.kind === "apartment" || s.kind === "condo";
+export const isEstate = (s: { kind?: PropertyKind }) => s.kind === "estate";
+export const defaultRatesFor = (s: { kind?: PropertyKind }): Rates =>
+  ({ ...(isLand(s) ? DEFAULT_LAND_RATES : isUnit(s) ? DEFAULT_UNIT_RATES : isEstate(s) ? DEFAULT_ESTATE_RATES : DEFAULT_RATES) });
 
 export interface AdjustedComp {
   comp: Comp;
@@ -46,6 +125,11 @@ export interface AdjustedComp {
   bedAdj: number;
   bathAdj: number;
   ageAdj: number;
+  /** Apartments and condos: floor, parking and monthly fee. Estates: lot size. Zero when not applicable or not entered. */
+  floorAdj: number;
+  parkingAdj: number;
+  feeAdj: number;
+  acreAdj: number;
   netAdj: number;
   grossAdjPct: number;
   adjustedPrice: number;
@@ -53,15 +137,29 @@ export interface AdjustedComp {
   weight: number;
 }
 
+const entered = (x: number | undefined): x is number => typeof x === "number" && Number.isFinite(x);
+/** (subject − comp) × rate, but only when both sides were actually entered, so a blank never invents an adjustment. */
+const diff = (subject: number | undefined, comp: number | undefined, rate: number | undefined) =>
+  entered(subject) && entered(comp) && entered(rate) ? (subject - comp) * rate : 0;
+
 /** Adjustments move the comp toward the subject: subject better => positive. */
 export function adjustComp(subject: Subject, comp: Comp, rates: Rates): AdjustedComp {
   const sqftAdj = (subject.sqft - comp.sqft) * rates.perSqft;
-  const bedAdj = (subject.beds - comp.beds) * rates.perBed;
-  const bathAdj = (subject.baths - comp.baths) * rates.perBath;
-  const ageAdj = (subject.yearBuilt - comp.yearBuilt) * rates.perYear;
-  const netAdj = sqftAdj + bedAdj + bathAdj + ageAdj + comp.otherAdj;
+  // Land has no bedrooms, bathrooms or age: only its size and the manual adjustment count.
+  const land = isLand(subject);
+  const bedAdj = land ? 0 : (subject.beds - comp.beds) * rates.perBed;
+  const bathAdj = land ? 0 : (subject.baths - comp.baths) * rates.perBath;
+  const ageAdj = land ? 0 : (subject.yearBuilt - comp.yearBuilt) * rates.perYear;
+  const unit = isUnit(subject);
+  const floorAdj = unit ? diff(subject.floor, comp.floor, rates.perFloor) : 0;
+  const parkingAdj = unit ? diff(subject.parking, comp.parking, rates.perParking) : 0;
+  // A higher monthly fee makes a unit worth less, so the sign is the other way round.
+  const feeAdj = unit ? diff(comp.monthlyFee, subject.monthlyFee, rates.perFee) : 0;
+  const acreAdj = isEstate(subject) ? diff(subject.acres, comp.acres, rates.perAcre) : 0;
+  const netAdj = sqftAdj + bedAdj + bathAdj + ageAdj + floorAdj + parkingAdj + feeAdj + acreAdj + comp.otherAdj;
   const gross =
-    Math.abs(sqftAdj) + Math.abs(bedAdj) + Math.abs(bathAdj) + Math.abs(ageAdj) + Math.abs(comp.otherAdj);
+    Math.abs(sqftAdj) + Math.abs(bedAdj) + Math.abs(bathAdj) + Math.abs(ageAdj) + Math.abs(floorAdj) + Math.abs(parkingAdj) +
+    Math.abs(feeAdj) + Math.abs(acreAdj) + Math.abs(comp.otherAdj);
   const grossAdjPct = comp.salePrice > 0 ? (gross / comp.salePrice) * 100 : 0;
   const adjustedPrice = comp.salePrice + netAdj;
   // Comps needing fewer adjustments count more.
@@ -72,6 +170,10 @@ export function adjustComp(subject: Subject, comp: Comp, rates: Rates): Adjusted
     bedAdj,
     bathAdj,
     ageAdj,
+    floorAdj,
+    parkingAdj,
+    feeAdj,
+    acreAdj,
     netAdj,
     grossAdjPct,
     adjustedPrice,
@@ -92,7 +194,7 @@ export interface Analysis {
 
 export function analyze(project: Pick<Project, "subject" | "comps" | "rates">): Analysis {
   const rows = project.comps
-    .filter((c) => c.included)
+    .filter((c) => c.included && c.salePrice > 0)
     .map((c) => adjustComp(project.subject, c, project.rates));
   if (rows.length === 0) return { rows, count: 0, low: 0, high: 0, mean: 0, median: 0, weighted: 0 };
   const prices = rows.map((r) => r.adjustedPrice).sort((a, b) => a - b);
@@ -120,12 +222,12 @@ export function newComp(): Comp {
   };
 }
 
-export function newProject(): Project {
+export function newProject(name = "Untitled analysis"): Project {
   return {
     id: crypto.randomUUID(),
-    name: "Untitled analysis",
+    name,
     subject: { address: "", sqft: 0, beds: 0, baths: 0, yearBuilt: 0 },
-    comps: [],
+    comps: [newComp(), newComp(), newComp()],
     rates: { ...DEFAULT_RATES },
     updatedAt: new Date().toISOString(),
   };
@@ -133,3 +235,18 @@ export function newProject(): Project {
 
 export const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+/** Illustrative data so a new user can see the tool working before typing their own. */
+export function exampleData(name = "Example: 12 Maple St"): Pick<Project, "name" | "subject" | "comps"> {
+  const mk = (address: string, salePrice: number, saleDate: string, sqft: number, beds: number, baths: number, yearBuilt: number, distanceMi: number): Comp =>
+    ({ ...newComp(), address, salePrice, saleDate, sqft, beds, baths, yearBuilt, distanceMi });
+  return {
+    name,
+    subject: { address: "12 Maple St", sqft: 1850, beds: 3, baths: 2, yearBuilt: 1998 },
+    comps: [
+      mk("48 Oak Ave", 412000, "2026-08-14", 1790, 3, 2, 1995, 0.3),
+      mk("7 Birch Ln", 436000, "2026-07-02", 1920, 3, 2.5, 2001, 0.5),
+      mk("203 Pine Rd", 398000, "2026-09-05", 1750, 3, 2, 1990, 0.8),
+    ],
+  };
+}

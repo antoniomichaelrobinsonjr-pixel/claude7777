@@ -1,157 +1,593 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, newComp, usd, type Comp, type Project, type Rates, type Subject } from "@/lib/comps";
+import { useI18n } from "@/i18n";
+import { useEntitlements } from "@/billing/entitlements";
+import { GatedButton } from "@/billing/ui";
+import { countryOptions } from "@/market/countries";
+import { MarketPanel } from "@/market/panel";
+import { VoiceEntry } from "@/voice/entry";
+import { applyParsedComps } from "@/voice/apply";
+import { readMoney, showMoney, type Vars } from "@/i18n/format";
+import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
+import { analyze, defaultRatesFor, exampleData, isEstate, isLand, isUnit, newComp, PROPERTY_KINDS, type Analysis, type Comp, type GeoPoint, type Project, type PropertyKind, type Rates, type Subject } from "@/lib/comps";
 
-const input = "w-full rounded border px-2 py-1";
-
-function Num({ value, onChange, step }: { value: number; onChange: (n: number) => void; step?: number }) {
+/** A number box where blank means "not entered" (undefined), so an empty field never creates an adjustment. */
+function OptNum({ label, value, onChange, step }: { label: string; value: number | undefined; onChange: (n: number | undefined) => void; step?: number }) {
+  const { t } = useI18n();
   return (
-    <input
-      className={input}
-      type="number"
-      step={step}
-      value={Number.isFinite(value) ? value : 0}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-    />
+    <label className="field">
+      {label}
+      <input
+        className="input" type="number" inputMode="decimal" step={step} min={0} placeholder={t("common.optional")}
+        value={typeof value === "number" && Number.isFinite(value) ? value : ""}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => { const v = parseFloat(e.target.value); onChange(Number.isFinite(v) ? Math.max(0, v) : undefined); }}
+      />
+    </label>
   );
 }
 
+function Num({ label, value, onChange, step }: { label: string; value: number; onChange: (n: number) => void; step?: number }) {
+  return (
+    <label className="field">
+      {label}
+      <input
+        className="input"
+        type="number"
+        inputMode="decimal"
+        step={step}
+        placeholder="0"
+        value={Number.isFinite(value) && value !== 0 ? value : ""}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      />
+    </label>
+  );
+}
+
+/** Dollar input that groups digits as you type, using the reader's own separators. */
+function Money({ label, value, onChange, negative }: { label: string; value: number; onChange: (n: number) => void; negative?: boolean }) {
+  const { info } = useI18n();
+  const [draft, setDraft] = useState<string | null>(null);
+  function handle(raw: string) {
+    const r = readMoney(raw, info.intl, negative);
+    setDraft(r.text);
+    onChange(r.value);
+  }
+  return (
+    <label className="field">
+      {label}
+      <div className="relative">
+        <span className="muted pointer-events-none absolute start-3 top-1/2 mt-0.5 -translate-y-1/2 text-sm" dir="ltr">$</span>
+        <input
+          className="input ps-6"
+          dir="ltr"
+          inputMode={negative ? "text" : "decimal"}
+          placeholder="0"
+          value={draft ?? showMoney(value, info.intl)}
+          onFocus={(e) => { setDraft(showMoney(value, info.intl)); e.target.select(); }}
+          onChange={(e) => handle(e.target.value)}
+          onBlur={() => setDraft(null)}
+        />
+      </div>
+    </label>
+  );
+}
+
+function Step({ n, title, hint }: { n: number; title: string; hint?: string }) {
+  return (
+    <div className="mb-4 flex items-start gap-3">
+      <span className="step">{n}</span>
+      <div>
+        <h2 className="font-semibold leading-6">{title}</h2>
+        {hint && <p className="muted text-sm">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Horizontal range bar: every comp's adjusted price as a dot, weighted value as a marker. */
+function RangeBar({ a }: { a: Analysis }) {
+  const { t, usd } = useI18n();
+  const span = Math.max(a.high - a.low, 1);
+  const pos = (v: number) => `${((v - a.low) / span) * 100}%`;
+  return (
+    <div className="px-2 pb-6 pt-8" dir="ltr">
+      <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg, var(--gold-a), var(--gold-b))", opacity: 0.55 }} />
+      <div className="relative -mt-2 h-2">
+        {a.rows.map((r) => (
+          <span
+            key={r.comp.id}
+            title={t("range.dotTitle", { name: r.comp.address || t("common.comp"), price: usd(r.adjustedPrice) })}
+            className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+            style={{ left: pos(r.adjustedPrice), background: "var(--surface)", borderColor: "var(--brand)" }}
+          />
+        ))}
+        <span className="absolute -top-7 -translate-x-1/2 text-center text-xs font-semibold uppercase" style={{ left: `clamp(16%, ${a.high > a.low ? pos(a.weighted) : "50%"}, 84%)`, color: "var(--accent)" }}>
+          {t("range.weightedMarker")}
+        </span>
+      </div>
+      <div className="muted mt-3 flex justify-between text-xs">
+        <span>{usd(a.low)}</span>
+        <span>{usd(a.high)}</span>
+      </div>
+    </div>
+  );
+}
+
+const isBlankProject = (p: Project) =>
+  !p.subject.address && !p.subject.sqft && p.comps.every((c) => !c.salePrice && !c.address);
+
+const STEP_KEYS = ["steps.subject", "steps.rates", "steps.comps", "steps.result"] as const;
+
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
+  const { t, rich, usd, date, info } = useI18n();
+  const countries = useMemo(() => countryOptions(info.intl), [info.intl]);
+  const ent = useEntitlements();
   const [project, setProject] = useState<Project | null>(null);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<{ kind: "saving" | "saved" | "failed"; message?: string } | null>(null);
+  const [missing, setMissing] = useState(false);
+  const [removed, setRemoved] = useState<{ comp: Comp; index: number } | null>(null);
+  type GeoStatus = { key: string; vars?: Vars; errorCode?: string; errorStatus?: number };
+  const [geoStatus, setGeoStatus] = useState<GeoStatus | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [guided, setGuided] = useState(false);
+  const [step, setStep] = useState(1);
+  const stepNavRef = useRef<HTMLElement>(null);
+  const firstStep = useRef(true);
+  // Moving between guided steps brings the new step to the top, so nobody has to scroll to find it.
+  useEffect(() => {
+    if (firstStep.current) { firstStep.current = false; return; }
+    const el = stepNavRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, [step]);
+  const [openComps, setOpenComps] = useState<Record<string, boolean>>({});
   const loaded = useRef(false);
 
   useEffect(() => {
-    getProject(id).then((p) => { setProject(p); loaded.current = true; });
+    getProject(id)
+      .then((p) => {
+        setProject(p);
+        setMissing(!p);
+        loaded.current = !!p;
+        if (p && isBlankProject(p)) setGuided(true);
+      })
+      .catch(() => setMissing(true));
   }, [id]);
 
   // Debounced autosave.
   useEffect(() => {
     if (!project || !loaded.current) return;
-    setStatus("Saving…");
-    const t = setTimeout(() => {
-      saveProject(project).then(() => setStatus("Saved")).catch((e) => setStatus(`Save failed: ${e.message}`));
+    setStatus({ kind: "saving" });
+    const timer = setTimeout(() => {
+      saveProject(project).then(() => setStatus({ kind: "saved" })).catch((e) => setStatus({ kind: "failed", message: String(e?.message ?? e) }));
     }, 600);
-    return () => clearTimeout(t);
-  }, [project]);
+    return () => clearTimeout(timer);
+  }, [project]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const analysis = useMemo(() => (project ? analyze(project) : null), [project]);
+  const analysis = useMemo(() => (project ? analyze(ent.apply(project)) : null), [project, ent]);
 
-  if (!project || !analysis) return <p className="text-slate-500">Loading…</p>;
+  if (missing) {
+    return (
+      <div className="card space-y-3 p-8 text-center">
+        <h1 className="text-xl font-semibold">{t("missing.title")}</h1>
+        <p className="muted">{t("missing.body")}</p>
+        <Link href="/" className="btn btn-primary">{t("missing.back")}</Link>
+      </div>
+    );
+  }
+  if (!project || !analysis) return <p className="muted">{t("common.loading")}</p>;
+
+  const effective = ent.apply(project);
+  const heldBack = (id: string) => !!project.comps.find((c) => c.id === id)?.included && !effective.comps.find((c) => c.id === id)?.included;
+  const lockedCount = ent.lockedComps(project);
+  const atCompLimit = !ent.canAddComp(project.comps.length);
+  const isBlank = isBlankProject(project);
+  const kind: PropertyKind = project.subject.kind ?? "home";
+  const land = isLand(project.subject);
+  const unit = isUnit(project.subject);
+  const estate = isEstate(project.subject);
+  /** The wording where it differs by property type (acres for land, living area for an estate). */
+  const lk = (key: string) => (land ? `land.${key}` : estate && key === "field.sqft" ? "estate.field.sqft" : key);
+  /** Which comps are open for editing. Short lists stay open; in a long list a finished comp folds to one line. */
+  const complete = (c: Comp) => c.address.trim() !== "" && c.salePrice > 0 && c.sqft > 0;
+  const isOpen = (c: Comp) => openComps[c.id] ?? (project!.comps.length <= 4 || !complete(c));
+  function changeKind(kind: PropertyKind) {
+    const wasDefault = (Object.keys(project!.rates) as (keyof Rates)[]).every((k) => project!.rates[k] === defaultRatesFor(project!.subject)[k]);
+    const subject = { ...project!.subject, kind };
+    set({ subject, ...(wasDefault ? { rates: defaultRatesFor(subject) } : {}) });
+  }
+  // In guided mode only the current step shows; printing always shows everything.
+  const show = (n: number) => (!guided || step === n ? "" : "hidden print:block");
+  const stepHint =
+    step === 1 && !project.subject.sqft ? t(lk("hint.sqft")) :
+    step === 3 && analysis.count === 0 ? t("hint.price") : "";
+  const canNext = !stepHint;
 
   const set = (patch: Partial<Project>) => setProject({ ...project, ...patch });
   const setSubject = (patch: Partial<Subject>) => set({ subject: { ...project.subject, ...patch } });
   const setRates = (patch: Partial<Rates>) => set({ rates: { ...project.rates, ...patch } });
+  async function locateAll() {
+    const geocoderUrl = process.env.NEXT_PUBLIC_GEOCODER_URL || DEFAULT_GEOCODER_URL;
+    type Target = { id: string | null; address: string };
+    const todo: Target[] = [];
+    if (project!.subject.address.trim() && !validGeo(project!.subject.geo, project!.subject.address)) todo.push({ id: null, address: project!.subject.address.trim() });
+    for (const c of project!.comps) if (c.address.trim() && !validGeo(c.geo, c.address)) todo.push({ id: c.id, address: c.address.trim() });
+    if (todo.length === 0) {
+      setGeoStatus({ key: project!.subject.address.trim() || project!.comps.some((c) => c.address.trim()) ? "geo.allDone" : "geo.enterFirst" });
+      return;
+    }
+    const host = new URL(geocoderUrl).host;
+    if (!window.confirm(t("geo.confirm", { count: todo.length, host }))) return;
+
+    setLocating(true);
+    const failed: string[] = [];
+    let found = 0;
+    let stopped = "";
+    let errorCode = "";
+    let errorStatus = 0;
+    for (let i = 0; i < todo.length; i++) {
+      const target = todo[i];
+      setGeoStatus({ key: "geo.progress", vars: { i: i + 1, total: todo.length } });
+      const r = await geocodeAddress(target.address, { baseUrl: process.env.NEXT_PUBLIC_GEOCODER_URL });
+      if (r.status === "ok") {
+        found++;
+        const point: GeoPoint = r.point;
+        setProject((p) => p && (target.id === null ? { ...p, subject: { ...p.subject, geo: point } } : { ...p, comps: p.comps.map((c) => (c.id === target.id ? { ...c, geo: point } : c)) }));
+      } else if (r.status === "not_found") {
+        failed.push(target.address);
+      } else {
+        stopped = "x";
+        errorCode = r.code;
+        errorStatus = r.httpStatus ?? 0;
+        break;
+      }
+      if (i < todo.length - 1) await new Promise((res) => setTimeout(res, GEOCODE_DELAY_MS));
+    }
+    // Fill in distances measured from the map, never overwriting one the preparer typed.
+    setProject((p) => {
+      if (!p) return p;
+      const subj = validGeo(p.subject.geo, p.subject.address);
+      if (!subj) return p;
+      return {
+        ...p,
+        comps: p.comps.map((c) => {
+          const g = validGeo(c.geo, c.address);
+          if (!g || !(c.distanceMi === 0 || c.distanceComputed)) return c;
+          return { ...c, distanceMi: Math.max(0.1, Math.round(haversineMiles(subj, g) * 10) / 10), distanceComputed: true };
+        }),
+      };
+    });
+    setLocating(false);
+    setGeoStatus(
+      stopped
+        ? { key: "geo.stopped", vars: { found, total: todo.length }, errorCode, errorStatus }
+        : failed.length
+          ? { key: "geo.doneFailed", vars: { found, total: todo.length, list: failed.join("; ") } }
+          : { key: "geo.doneMeasured", vars: { found, total: todo.length } },
+    );
+  }
+
+  const duplicateComp = (cid: string) => {
+    const i = project.comps.findIndex((c) => c.id === cid);
+    if (i < 0) return;
+    const copy = { ...project.comps[i], id: crypto.randomUUID() };
+    const next = [...project.comps];
+    next.splice(i + 1, 0, copy);
+    set({ comps: next });
+  };
   const setComp = (cid: string, patch: Partial<Comp>) =>
     set({ comps: project.comps.map((c) => (c.id === cid ? { ...c, ...patch } : c)) });
 
   return (
     <div className="space-y-6">
-      <div className="no-print flex items-center justify-between gap-4">
+      <header className="mb-2 hidden print:block">
+        <div className="muted text-xs font-semibold uppercase tracking-widest">CompPilot</div>
+        <h1 className="display text-3xl font-bold">{t("project.printTitle")}</h1>
+        <p className="muted mt-1 text-sm">
+          {[project.name, project.name.includes(project.subject.address) ? "" : project.subject.address, date(new Date())].filter(Boolean).join(" · ")}
+        </p>
+        <div className="mt-3 h-px" style={{ background: "linear-gradient(90deg, var(--gold-b), transparent)" }} />
+      </header>
+      <Link href="/" className="muted tap no-print -ms-1 text-sm hover:underline">{t("app.allAnalyses")}</Link>
+      <h1 className="sr-only"><bdi>{project.name || t("project.fallbackTitle")}</bdi></h1>
+      {isBlank && (
+        <div className="card no-print flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+          <span>{t("project.blankHint")}</span>
+          <button className="btn" onClick={() => set(exampleData(t("name.example")))}>{t("project.loadExample")}</button>
+        </div>
+      )}
+      <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <input
-          className="w-full max-w-md rounded border bg-white px-2 py-1 text-2xl font-semibold"
+          dir="auto" className="display w-full max-w-md bg-transparent text-3xl font-bold outline-none focus:underline"
           value={project.name}
           onChange={(e) => set({ name: e.target.value })}
+          aria-label={t("project.nameLabel")}
         />
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-500">{status}</span>
-          <button onClick={() => window.print()} className="rounded border bg-white px-3 py-1 hover:bg-slate-100">Print / save PDF</button>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="muted text-sm">{status && (status.kind === "saving" ? t("project.saving") : status.kind === "saved" ? t("project.saved") : status.message?.includes("plan_limit") ? t("billing.saveLimit") : t("project.saveFailed", { message: status.message ?? "" }))}</span>
+          <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
+            {guided ? t("project.showAll") : t("project.guideMe")}
+          </button>
+          <GatedButton allowed={ent.can("addressLookup")} feature="addressLookup" onClick={locateAll} disabled={locating} title={t("project.locateTitle")}>
+            {locating ? t("project.locating") : t("project.locate")}
+          </GatedButton>
+          {(!guided || step === 4) && <GatedButton allowed={ent.can("report")} feature="report" href={`/project/${project.id}/report`}>{t("project.investorReport")}</GatedButton>}
+          {(!guided || step === 4) && <GatedButton allowed={ent.can("printSummary")} feature="printSummary" onClick={() => window.print()}>{t("common.print")}</GatedButton>}
         </div>
       </div>
 
-      <section className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">1. Subject property</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <label className="col-span-2 text-sm">Address
-            <input className={input} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
-          </label>
-          <label className="text-sm">Sq ft<Num value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} /></label>
-          <label className="text-sm">Beds<Num value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} /></label>
-          <label className="text-sm">Baths<Num step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} /></label>
-          <label className="text-sm">Year built<Num value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} /></label>
-        </div>
-      </section>
-
-      <section className="no-print rounded border bg-white p-4">
-        <h2 className="mb-1 font-semibold">2. Adjustment rates</h2>
-        <p className="mb-3 text-sm text-slate-500">Dollar value of one unit of difference. Edit to match your market; none of these are defaults you should rely on.</p>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <label className="text-sm">$ per sq ft<Num value={project.rates.perSqft} onChange={(n) => setRates({ perSqft: n })} /></label>
-          <label className="text-sm">$ per bedroom<Num value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} /></label>
-          <label className="text-sm">$ per bath<Num value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} /></label>
-          <label className="text-sm">$ per year of age<Num value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} /></label>
-        </div>
-      </section>
-
-      <section className="rounded border bg-white p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">3. Comparable sales</h2>
-          <button className="no-print rounded bg-blue-600 px-3 py-1 text-white" onClick={() => set({ comps: [...project.comps, newComp()] })}>Add comp</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-sm">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th className="no-print p-1">Use</th><th className="p-1">Address</th><th className="p-1">Sale price</th>
-                <th className="p-1">Sale date</th><th className="p-1">Sq ft</th><th className="p-1">Beds</th><th className="p-1">Baths</th>
-                <th className="p-1">Year</th><th className="p-1">Miles</th><th className="p-1">Other adj $</th>
-                <th className="p-1 text-right">Net adj</th><th className="p-1 text-right">Adjusted</th><th className="no-print p-1" />
-              </tr>
-            </thead>
-            <tbody>
-              {project.comps.map((c) => {
-                const row = analysis.rows.find((r) => r.comp.id === c.id);
-                return (
-                  <tr key={c.id} className={c.included ? "" : "opacity-50"}>
-                    <td className="no-print p-1"><input type="checkbox" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /></td>
-                    <td className="p-1"><input className={input} value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} /></td>
-                    <td className="p-1"><Num value={c.salePrice} onChange={(n) => setComp(c.id, { salePrice: n })} /></td>
-                    <td className="p-1"><input className={input} type="date" value={c.saleDate} onChange={(e) => setComp(c.id, { saleDate: e.target.value })} /></td>
-                    <td className="p-1"><Num value={c.sqft} onChange={(n) => setComp(c.id, { sqft: n })} /></td>
-                    <td className="p-1"><Num value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} /></td>
-                    <td className="p-1"><Num step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} /></td>
-                    <td className="p-1"><Num value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} /></td>
-                    <td className="p-1"><Num step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n })} /></td>
-                    <td className="p-1"><Num value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} /></td>
-                    <td className="p-1 text-right">{row ? usd(row.netAdj) : "—"}{row && row.grossAdjPct > 25 && <span title="Gross adjustments over 25% of sale price" className="ml-1 text-amber-600">⚠</span>}</td>
-                    <td className="p-1 text-right font-medium">{row ? usd(row.adjustedPrice) : "—"}</td>
-                    <td className="no-print p-1"><button className="text-red-600" onClick={() => set({ comps: project.comps.filter((x) => x.id !== c.id) })}>✕</button></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {project.comps.length === 0 && <p className="mt-2 text-slate-500">Add at least three comps for a meaningful range.</p>}
-      </section>
-
-      <section className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">4. Result</h2>
-        {analysis.count === 0 ? (
-          <p className="text-slate-500">Include at least one comp to see a value range.</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            {[
-              ["Low", analysis.low],
-              ["Median", analysis.median],
-              ["Mean", analysis.mean],
-              ["Weighted", analysis.weighted],
-              ["High", analysis.high],
-            ].map(([label, v]) => (
-              <div key={label as string} className="rounded bg-slate-50 p-3">
-                <div className="text-xs uppercase text-slate-500">{label}</div>
-                <div className="text-xl font-semibold">{usd(v as number)}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="mt-4 text-xs text-slate-500">
-          This is a comparative market analysis for discussion purposes only. It is not an appraisal and must not be used for lending decisions.
+      {geoStatus && (
+        <p className="no-print muted text-sm" role="status">
+          {t(geoStatus.key, geoStatus.errorCode ? { ...geoStatus.vars, message: t(`geo.err.${geoStatus.errorCode}`, { status: geoStatus.errorStatus ?? 0 }) } : geoStatus.vars)}
         </p>
-      </section>
+      )}
+
+      {guided && (
+        <nav ref={stepNavRef} data-step-anchor className="no-print card flex items-center gap-1 p-2" aria-label={t("project.progress")}>
+          {STEP_KEYS.map((k, i) => (
+            <button
+              key={k}
+              onClick={() => setStep(i + 1)}
+              aria-current={step === i + 1 ? "step" : undefined}
+              className="flex flex-1 items-center justify-center gap-1 rounded-xl px-1 py-2 text-sm font-semibold transition sm:gap-2 sm:px-2"
+              style={step === i + 1 ? { background: "var(--brand)", color: "var(--brand-ink)" } : { color: step > i + 1 ? "var(--accent)" : "var(--muted)" }}
+            >
+              <span>{step > i + 1 ? "✓" : i + 1}</span>
+              <span className="text-xs sm:text-sm">{t(k)}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="min-w-0 space-y-6">
+          <section className={`card p-5 ${show(1)}`}>
+            <Step n={1} title={t("step1.title")} hint={t("step1.hintAny")} />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="col-span-2 md:col-span-4">
+                <label className="field">{t("field.propertyType")}
+                  <select className="input" value={kind} onChange={(e) => changeKind(e.target.value as PropertyKind)}>
+                    {PROPERTY_KINDS.map((k) => <option key={k} value={k}>{t(`type.${k}`)}</option>)}
+                  </select>
+                </label>
+                <p className="muted mt-1 text-sm">{t(`type.hint.${kind}`)}</p>
+              </div>
+              <label className="field col-span-2 md:col-span-4">{t("field.address")}
+                <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
+                {(() => { const g = validGeo(project.subject.geo, project.subject.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
+              </label>
+              <label className="field col-span-2 md:col-span-2">{t("field.country")}
+                <select className="input" value={project.subject.country ?? ""} onChange={(e) => setSubject({ country: e.target.value || undefined })}>
+                  <option value="">{t("field.countryNone")}</option>
+                  {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+                </select>
+              </label>
+              <Num label={t(lk("field.sqft"))} step={land ? 0.01 : 1} value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
+              {!land && <Num label={t("field.beds")} value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />}
+              {!land && <Num label={t("field.baths")} step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} />}
+              {!land && <Num label={t("field.yearBuilt")} value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} />}
+              {unit && <OptNum label={t("field.floor")} value={project.subject.floor} onChange={(n) => setSubject({ floor: n })} />}
+              {unit && <OptNum label={t("field.parking")} value={project.subject.parking} onChange={(n) => setSubject({ parking: n })} />}
+              {unit && <OptNum label={t("field.monthlyFee")} value={project.subject.monthlyFee} onChange={(n) => setSubject({ monthlyFee: n })} />}
+              {estate && <OptNum label={t("field.lotAcres")} step={0.01} value={project.subject.acres} onChange={(n) => setSubject({ acres: n })} />}
+            </div>
+          </section>
+
+          <section className={`card no-print p-5 ${show(2)}`}>
+            <Step n={2} title={t("step2.title")} hint={t("step2.hint")} />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Money label={t(lk("rate.sqft"))} value={project.rates.perSqft} onChange={(n) => setRates({ perSqft: n })} />
+              {!land && <Money label={t("rate.bed")} value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} />}
+              {!land && <Money label={t("rate.bath")} value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} />}
+              {!land && <Money label={t("rate.year")} value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />}
+              {unit && <Money label={t("rate.floor")} value={project.rates.perFloor ?? 0} onChange={(n) => setRates({ perFloor: n })} />}
+              {unit && <Money label={t("rate.parking")} value={project.rates.perParking ?? 0} onChange={(n) => setRates({ perParking: n })} />}
+              {unit && <Money label={t("rate.fee")} value={project.rates.perFee ?? 0} onChange={(n) => setRates({ perFee: n })} />}
+              {estate && <Money label={t("rate.lotAcre")} value={project.rates.perAcre ?? 0} onChange={(n) => setRates({ perAcre: n })} />}
+            </div>
+            <label className="field mt-3 block">{t("ratesBasis.label")} <span className="font-normal">{t("ratesBasis.hint")}</span>
+              <input className="input" dir="auto" placeholder={t("ratesBasis.placeholder")} value={project.ratesBasis ?? ""} onChange={(e) => set({ ratesBasis: e.target.value })} />
+            </label>
+          </section>
+
+          {guided && step === 4 && (
+            <section className="card no-print overflow-hidden">
+              <h2 className="p-5 font-semibold">{t("glance.title")}</h2>
+              <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
+                {analysis.rows.map((r) => (
+                  <li key={r.comp.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm" style={{ borderColor: "var(--border)" }}>
+                    <span className="truncate"><bdi>{r.comp.address || t("common.unnamedComp")}</bdi></span>
+                    <span className="muted whitespace-nowrap">{usd(r.comp.salePrice)} <span aria-hidden className="inline-block rtl:-scale-x-100">→</span> <strong style={{ color: "var(--ink)" }}>{usd(r.adjustedPrice)}</strong></span>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted p-5 text-sm">{t("glance.note")}</p>
+            </section>
+          )}
+
+          <section className={`space-y-3 ${show(3)}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Step n={3} title={t("step3.title")} hint={t("step3.hint")} />
+              <button className="btn btn-primary no-print" disabled={atCompLimit} title={atCompLimit ? t("billing.limit.comps", { count: ent.maxComps }) : undefined} onClick={() => set({ comps: [...project.comps, newComp()] })}>{t("comp.add")}</button>
+            </div>
+            {lockedCount > 0 && (
+              <div className="card no-print flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm" role="note" style={{ borderColor: "var(--warn)" }}>
+                <span>🔒 {t("billing.lockedComps", { count: lockedCount })}</span>
+                <Link href="/pricing" className="btn !py-1.5 text-sm">{t("billing.seePlans")}</Link>
+              </div>
+            )}
+            {atCompLimit && lockedCount === 0 && ent.billingEnabled && (
+              <p className="no-print muted text-sm" role="note">{t("billing.limit.comps", { count: ent.maxComps })}</p>
+            )}
+            <VoiceEntry
+              kind={kind} defaultOpen={project.comps.every((c) => !complete(c))}
+              onApply={(parsed) => { const r = applyParsedComps(project.comps, parsed, newComp, ent.maxComps); set({ comps: r.comps }); return { added: r.added, skipped: r.skipped }; }}
+            />
+            {removed && (
+              <div className="card no-print flex items-center justify-between gap-3 px-4 py-2 text-sm">
+                <span>{t("comp.removed")}</span>
+                <button
+                  className="font-semibold hover:underline"
+                  style={{ color: "var(--brand)" }}
+                  onClick={() => {
+                    const next = [...project.comps];
+                    next.splice(removed.index, 0, removed.comp);
+                    set({ comps: next });
+                    setRemoved(null);
+                  }}
+                >{t("common.undo")}</button>
+              </div>
+            )}
+            {project.comps.length === 0 && (
+              <div className="card muted p-8 text-center">{t("comp.noneYet")}</div>
+            )}
+            {project.comps.map((c, i) => {
+              const row = analysis.rows.find((r) => r.comp.id === c.id);
+              const open = isOpen(c);
+              return (
+                <div key={c.id} className="card p-5 transition" style={c.included && !heldBack(c.id) ? undefined : { borderStyle: "dashed", background: "var(--surface-2)" }}>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap items-center gap-x-4">
+                      <span className="text-sm font-semibold">{t("comp.n", { n: i + 1 })}{heldBack(c.id) && <span className="ms-2 font-normal" style={{ color: "var(--warn)" }}>🔒 {t("billing.compHeldBack")}</span>}</span>
+                      <label className="tap no-print flex items-center gap-2 text-sm">
+                        <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> {t("common.use")}
+                      </label>
+                    </div>
+                    <div className="no-print flex flex-wrap items-center gap-x-4 text-sm">
+                      <button className="muted tap hover:underline" aria-expanded={open} onClick={() => setOpenComps({ ...openComps, [c.id]: !open })}>{open ? t("comp.hideDetails") : t("comp.showDetails")}</button>
+                      <button className="muted tap hover:underline" onClick={() => duplicateComp(c.id)}>{t("common.duplicate")}</button>
+                      <button
+                        className="muted tap hover:underline"
+                        onClick={() => {
+                          setRemoved({ comp: c, index: i });
+                          set({ comps: project.comps.filter((x) => x.id !== c.id) });
+                        }}
+                      >{t("common.remove")}</button>
+                    </div>
+                  </div>
+                  {!open && (
+                    <p className="mb-1 text-sm [overflow-wrap:anywhere] print:hidden">
+                      <bdi className="font-semibold">{c.address || t("common.unnamedComp")}</bdi>
+                      <span className="muted"> · {c.salePrice > 0 ? usd(c.salePrice) : "—"}{c.saleDate ? ` · ${c.saleDate}` : ""}</span>
+                    </p>
+                  )}
+                  <div className={`grid-cols-2 gap-3 md:grid-cols-4 ${open ? "grid" : "hidden print:grid"}`}>
+                    <label className="field col-span-2">{t("field.address")}
+                      <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
+                      {(() => { const g = validGeo(c.geo, c.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
+                    </label>
+                    <Money label={t("comp.salePrice")} value={c.salePrice} onChange={(n) => setComp(c.id, { salePrice: n })} />
+                    <label className="field">{t("comp.saleDate")}
+                      <input className="input" type="date" value={c.saleDate} onChange={(e) => setComp(c.id, { saleDate: e.target.value })} />
+                    </label>
+                    <Num label={t(lk("field.sqft"))} step={land ? 0.01 : 1} value={c.sqft} onChange={(n) => setComp(c.id, { sqft: n })} />
+                    {!land && <Num label={t("field.beds")} value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} />}
+                    {!land && <Num label={t("field.baths")} step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} />}
+                    {!land && <Num label={t("field.yearBuilt")} value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />}
+                    {unit && <OptNum label={t("field.floor")} value={c.floor} onChange={(n) => setComp(c.id, { floor: n })} />}
+                    {unit && <OptNum label={t("field.parking")} value={c.parking} onChange={(n) => setComp(c.id, { parking: n })} />}
+                    {unit && <OptNum label={t("field.monthlyFee")} value={c.monthlyFee} onChange={(n) => setComp(c.id, { monthlyFee: n })} />}
+                    {estate && <OptNum label={t("field.lotAcres")} step={0.01} value={c.acres} onChange={(n) => setComp(c.id, { acres: n })} />}
+                    <Num label={c.distanceComputed ? t("comp.distanceMap") : t("comp.distance")} step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n, distanceComputed: false })} />
+                    <Money label={t("comp.otherAdj")} negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
+                    <label className="field col-span-2">{t("comp.source")} <span className="font-normal">{t("comp.sourceHint")}</span>
+                      <input className="input" dir="auto" placeholder={t("comp.sourcePlaceholder")} value={c.source ?? ""} onChange={(e) => setComp(c.id, { source: e.target.value })} />
+                    </label>
+                  </div>
+                  {c.included && !heldBack(c.id) && c.salePrice <= 0 && (
+                    <p className="mt-4 text-sm" style={{ color: "var(--warn)" }}>{t("comp.needPrice")}</p>
+                  )}
+                  {row && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "var(--surface-2)" }}>
+                      <span className="muted">
+                        {t("comp.netAdj")} <strong style={{ color: "var(--ink)" }}>{usd(row.netAdj)}</strong>
+                        {row.grossAdjPct > 25 && (
+                          <span className="ms-2" style={{ color: "var(--warn)" }} title={t("comp.heavyTitle")}>{t("comp.heavy")}</span>
+                        )}
+                      </span>
+                      <span>{t("comp.adjustedPrice")} <strong className="text-lg">{usd(row.adjustedPrice)}</strong></span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </section>
+
+          {(!guided || step === 4) && !isBlank && (
+            <MarketPanel className="no-print" country={project.subject.country} onChooseCountry={(c) => setSubject({ country: c })} comps={analysis.rows.map((r) => ({ id: r.comp.id, address: r.comp.address, saleDate: r.comp.saleDate }))} />
+          )}
+
+          {guided && (
+            <div className="no-print flex items-center justify-between gap-3">
+              <button className="btn" disabled={step === 1} onClick={() => setStep(step - 1)} style={step === 1 ? { visibility: "hidden" } : undefined}>{t("common.back")}</button>
+              <span className="text-sm" style={{ color: "var(--warn)" }}>{step < 4 ? stepHint : ""}</span>
+              {step < 4 ? (
+                <button className="btn btn-primary" disabled={!canNext} style={!canNext ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => setStep(step + 1)}>
+                  {step === 3 ? t("common.seeResult") : t("common.next")}
+                </button>
+              ) : (
+                <GatedButton allowed={ent.can("printSummary")} feature="printSummary" className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</GatedButton>
+              )}
+            </div>
+          )}
+        </div>
+
+        <aside id="result" className={`scroll-mt-20 print:order-first lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
+          <div className="card overflow-hidden">
+            <div className="p-5" style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderBottom: "1px solid color-mix(in srgb, var(--gold-b) 60%, transparent)" }}>
+              <div className="text-xs font-semibold uppercase tracking-wider opacity-80">{t("result.weighted")}</div>
+              <div className="display gold-text mt-1 text-4xl font-bold">{analysis.count ? usd(analysis.weighted) : "—"}</div>
+              <div className="mt-1 text-sm opacity-80">{t("result.compsUsed", { used: analysis.count, count: project.comps.length })}</div>
+            </div>
+            {analysis.count === 0 ? (
+              <p className="muted p-5 text-sm">{t("result.needOne")}</p>
+            ) : (
+              <>
+                <RangeBar a={analysis} />
+                <dl className="grid grid-cols-3 gap-2 px-5 pb-5 text-center">
+                  {([["result.low", analysis.low], ["result.median", analysis.median], ["result.high", analysis.high]] as const).map(([l, v]) => (
+                    <div key={l} className="min-w-0 rounded-xl p-2" style={{ background: "var(--surface-2)" }}>
+                      <dt className="muted text-xs font-semibold uppercase">{t(l)}</dt>
+                      <dd className="whitespace-nowrap text-[13px] font-bold sm:text-sm" dir="ltr">{usd(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+            <p className="muted border-t px-5 py-3 text-xs leading-5" style={{ borderColor: "var(--border)" }}>
+              {rich("result.how", {}, { b: (x, i) => <strong key={i}>{x}</strong> })}
+            </p>
+            <p className="muted border-t p-4 text-xs leading-5" style={{ borderColor: "var(--border)" }}>
+              {t("result.disclaimer")}
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      {/* On a phone the answer sits below every comp; keep it in view and one tap away. */}
+      {!guided && analysis.count > 0 && (
+        <>
+          <div className="h-20 lg:hidden no-print" aria-hidden />
+          <a
+            href="#result"
+            className="no-print safe-bottom fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 px-4 pt-3 pb-3 lg:hidden"
+            style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderTop: "1px solid var(--gold-b)" }}
+          >
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold uppercase tracking-wider opacity-80">{t("result.weighted")}</span>
+              <span className="block truncate text-xs opacity-80">{t("result.compsUsed", { used: analysis.count, count: project.comps.length })}</span>
+            </span>
+            <span className="display gold-text whitespace-nowrap text-2xl font-bold" dir="ltr">{usd(analysis.weighted)}</span>
+          </a>
+        </>
+      )}
     </div>
   );
 }

@@ -1,22 +1,45 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import RegisterSW from "./register-sw";
+import Header from "./header";
+import { I18nProvider } from "@/i18n";
+import { EntitlementsProvider } from "@/billing/entitlements";
+import { PrintGuard } from "@/billing/print-guard";
+import Footer from "./footer";
+import ScrollKeeper from "./scroll-keeper";
 
 export const metadata: Metadata = {
   title: "CompPilot",
   description: "Guided comparable-sales market analysis",
+  appleWebApp: { capable: true, title: "CompPilot", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#16204a" },
+    { media: "(prefers-color-scheme: dark)", color: "#070b1c" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <header className="no-print border-b bg-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <a href="/" className="text-lg font-semibold">CompPilot</a>
-            <a href="/login" className="text-sm text-slate-600 hover:underline">Account</a>
-          </div>
-        </header>
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+      <body className="min-h-screen antialiased">
+        <RegisterSW />
+        <ScrollKeeper />
+        <I18nProvider>
+          <EntitlementsProvider>
+            <div className="app-shell">
+              <Header />
+              <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+              <Footer />
+            </div>
+            <PrintGuard />
+          </EntitlementsProvider>
+        </I18nProvider>
       </body>
     </html>
   );
