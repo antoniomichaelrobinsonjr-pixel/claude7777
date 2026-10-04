@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
 import { analyze, usd, type Project } from "@/lib/comps";
 import { buildReport, type Grade } from "@/lib/report";
+import { DistanceBars, TrendChart } from "./charts";
 
 const pct = (n: number, d = 1) => `${n.toFixed(d)}%`;
 const signed = (n: number) => `${n < 0 ? "−" : "+"}${usd(Math.abs(n))}`;
@@ -68,6 +69,27 @@ export default function ReportPage() {
         <button className="btn btn-primary" onClick={() => window.print()}>Print / save PDF</button>
       </div>
 
+      <details className="no-print card p-4">
+        <summary className="cursor-pointer text-sm font-semibold">Adjust how much each reliability check counts</summary>
+        <p className="muted mt-2 text-sm">
+          All five count equally by default. If you change this, the report states that it was customised and shows what the score would be with equal weights, so readers can see the difference. Set a check to 0 to leave it out.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {report.factors.map((f) => (
+            <label key={f.key} className="field">{f.label}
+              <select
+                className="input"
+                value={f.weight}
+                onChange={(e) => saveProject(update({ checkWeights: { ...project.checkWeights, [f.key]: Number(e.target.value) } }))}
+              >
+                {Array.from({ length: 11 }, (_, i) => <option key={i} value={i}>{i === 0 ? "0 (ignore)" : i === 1 ? "1 (normal)" : i}</option>)}
+              </select>
+            </label>
+          ))}
+        </div>
+        <button className="btn mt-3" disabled={!report.customWeights} onClick={() => saveProject(update({ checkWeights: undefined }))}>Reset to equal weights</button>
+      </details>
+
       <header>
         <div className="muted text-xs font-semibold uppercase tracking-widest">CompPilot · Valuation Support Report</div>
         <h1 className="display mt-1 text-4xl font-bold">{project.subject.address || project.name}</h1>
@@ -102,6 +124,11 @@ export default function ReportPage() {
                 <p className="mt-2 text-sm">{VERDICT[report.grade]}</p>
               </div>
             </div>
+            {report.customWeights && (
+              <p className="border-t p-4 text-sm" style={{ borderColor: "var(--border)", color: "var(--warn)" }}>
+                ⚠ The reliability checks were weighted by the preparer. With equal weights the score would be {report.equalWeightScore}/100 ({report.equalWeightGrade}).
+              </p>
+            )}
             {report.caps.length > 0 && (
               <ul className="space-y-1 border-t p-4 text-sm" style={{ borderColor: "var(--border)", color: "var(--warn)" }}>
                 {report.caps.map((c) => <li key={c}>⚠ {c}</li>)}
@@ -118,7 +145,10 @@ export default function ReportPage() {
                 <li key={f.key}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-semibold">{f.label}</span>
-                    <span className="text-sm font-semibold">{f.score === null ? "Not provided" : `${Math.round(f.score)}/100`}</span>
+                    <span className="text-sm font-semibold">
+                      {f.score === null ? "Not provided" : `${Math.round(f.score)}/100`}
+                      <span className="muted font-normal"> · counts {f.weightPct === 0 ? "0" : Math.round(f.weightPct)}%</span>
+                    </span>
                   </div>
                   <div className="mt-1 h-2 overflow-hidden rounded-full" style={{ background: "var(--surface-2)" }}>
                     <div className="h-full rounded-full" style={{ width: `${f.score ?? 0}%`, background: "linear-gradient(90deg, var(--gold-a), var(--gold-b))" }} />
@@ -155,6 +185,14 @@ export default function ReportPage() {
                 </tbody>
               </table>
             </div>
+          </Section>
+
+          <Section title="Sale price per sq ft over time">
+            <TrendChart trend={report.trend} />
+          </Section>
+
+          <Section title="Distance from the subject property">
+            <DistanceBars comps={report.comps} />
           </Section>
 
           <Section title="Method">

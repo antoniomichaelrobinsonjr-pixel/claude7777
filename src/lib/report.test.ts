@@ -77,3 +77,73 @@ test("age is measured from the report date", () => {
   const r = buildReport(project([comp({ saleDate: "2026-09-21" })]), ASOF);
   assert.equal(r.comps[0].ageDays, 10);
 });
+
+test("equal weights by default; no custom flag", () => {
+  const r = buildReport(project(five()), ASOF);
+  assert.equal(r.customWeights, false);
+  assert.equal(r.equalWeightScore, r.score);
+  assert.ok(r.factors.every((f) => Math.round(f.weightPct) === 20));
+});
+
+test("custom weights change the score and are disclosed alongside the equal-weight score", () => {
+  // Old sales: recency is the weak check, so weighting it up must lower the score.
+  const old = five().map((c) => ({ ...c, saleDate: "2026-01-15" }));
+  const base = buildReport(project(old), ASOF);
+  const heavy = buildReport(project(old, { checkWeights: { recency: 10 } }), ASOF);
+  assert.equal(heavy.customWeights, true);
+  assert.ok(heavy.score < base.score);
+  assert.equal(heavy.equalWeightScore, base.score);
+  assert.ok(heavy.limitations.some((l) => l.includes("weighted by the preparer")));
+  assert.ok(Math.abs(heavy.factors.reduce((s, f) => s + f.weightPct, 0) - 100) < 1e-9);
+});
+
+test("all-zero weights fall back to equal; weights are clamped to 0-10", () => {
+  const z = buildReport(project(five(), { checkWeights: { count: 0, recency: 0, proximity: 0, similarity: 0, consistency: 0 } }), ASOF);
+  assert.equal(z.customWeights, false);
+  const big = buildReport(project(five(), { checkWeights: { count: 999, recency: -5 } }), ASOF);
+  assert.equal(big.factors.find((f) => f.key === "count")!.weight, 10);
+  assert.equal(big.factors.find((f) => f.key === "recency")!.weight, 0);
+});
+
+test("weights cannot lift a capped grade", () => {
+  const r = buildReport(project(five(), { rates: { ...DEFAULT_RATES }, ratesBasis: "", checkWeights: { count: 10 } }), ASOF);
+  assert.ok(r.score <= 79);
+});
+
+test("trend: fits a rising market and reports the monthly change", () => {
+  // price per sq ft rises 1% per month from $200
+  const mk = (months: number) => {
+    const d = new Date(Date.UTC(2026, 0, 1) + months * 30.4375 * 86_400_000).toISOString().slice(0, 10);
+    return comp({ saleDate: d, sqft: 2000, salePrice: Math.round(2000 * 200 * (1 + 0.01 * months)) });
+  };
+  const r = buildReport(project([mk(0), mk(2), mk(4), mk(6)]), ASOF);
+  assert.equal(r.trend.points.length, 4);
+  assert.ok(r.trend.slopePctPerMonth !== null);
+  assert.ok(Math.abs(r.trend.slopePctPerMonth! - 0.95) < 0.2, String(r.trend.slopePctPerMonth));
+  assert.ok(r.trend.r2! > 0.99);
+});
+
+test("trend: refuses to draw a line from too little data", () => {
+  const few = buildReport(project([comp({}), comp({}), comp({})]), ASOF);
+  assert.equal(few.trend.slopePctPerMonth, null);
+  assert.ok(few.trend.note.includes("at least 4"));
+  const close = buildReport(project(five()), ASOF); // all sold the same day
+  assert.equal(close.trend.slopePctPerMonth, null);
+  assert.ok(close.trend.note.includes("two months"));
+});
+
+test("trend ignores comps with no date, no size, or a future date", () => {
+  const r = buildReport(project([comp({ saleDate: "" }), comp({ sqft: 0 }), comp({ saleDate: "2027-05-01" }), comp({})]), ASOF);
+  assert.equal(r.trend.points.length, 1);
+});
+
+test("a strong price trend is called out as an unadjusted timing risk", () => {
+  const mk = (months: number) => {
+    const d = new Date(Date.UTC(2026, 0, 1) + months * 30.4375 * 86_400_000).toISOString().slice(0, 10);
+    return comp({ saleDate: d, sqft: 2000, salePrice: Math.round(2000 * 200 * (1 + 0.012 * months)) });
+  };
+  const r = buildReport(project([mk(0), mk(2), mk(4), mk(6)]), ASOF);
+  assert.ok(r.limitations.some((l) => l.includes("rising") && l.includes("not adjusted for date of sale")));
+  const flat = buildReport(project(five()), ASOF);
+  assert.ok(!flat.limitations.some((l) => l.includes("not adjusted for date of sale")));
+});

@@ -22,9 +22,16 @@ export interface CompEvidence {
   flags: string[];
 }
 
+export type FactorKey = "count" | "recency" | "proximity" | "similarity" | "consistency";
+export const FACTOR_KEYS: FactorKey[] = ["count", "recency", "proximity", "similarity", "consistency"];
+
 export interface Factor {
-  key: "count" | "recency" | "proximity" | "similarity" | "consistency";
+  key: FactorKey;
   label: string;
+  /** Share of the overall score this check carries, in percent. */
+  weightPct: number;
+  /** Raw weight the preparer set (0-10); 1 when untouched. */
+  weight: number;
   /** 0-100, or null when the data needed to score it was not provided. */
   score: number | null;
   value: string;
@@ -33,8 +40,27 @@ export interface Factor {
 
 export type Grade = "High" | "Moderate" | "Limited" | "Low";
 
+export interface TrendPoint { id: string; address: string; ts: number; ppsf: number }
+
+export interface Trend {
+  points: TrendPoint[];
+  /** Change in sale price per sq ft, percent per month; null when there is too little data to fit a line. */
+  slopePctPerMonth: number | null;
+  /** Share of the variation in price per sq ft that the line explains (0-1). */
+  r2: number | null;
+  intercept: number | null;
+  slopePerMs: number | null;
+  note: string;
+}
+
 export interface Report {
   asOf: string;
+  /** True when the preparer changed how much the five checks count. */
+  customWeights: boolean;
+  /** What the score would be with all five checks weighted equally (same caps applied). */
+  equalWeightScore: number;
+  equalWeightGrade: Grade;
+  trend: Trend;
   count: number;
   comps: CompEvidence[];
   factors: Factor[];
@@ -60,6 +86,47 @@ export const gradeFor = (score: number): Grade =>
   score >= 80 ? "High" : score >= 60 ? "Moderate" : score >= 40 ? "Limited" : "Low";
 
 const COUNT_SCORES = [0, 20, 40, 70, 85, 100];
+
+/** Normalise the preparer's weights: clamp to 0-10; blank = 1; all zero falls back to equal. */
+export function resolveWeights(w: Project["checkWeights"]): Record<FactorKey, number> {
+  const out = {} as Record<FactorKey, number>;
+  for (const k of FACTOR_KEYS) {
+    const v = w?.[k];
+    out[k] = typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 1;
+  }
+  return FACTOR_KEYS.every((k) => out[k] === 0) ? { count: 1, recency: 1, proximity: 1, similarity: 1, consistency: 1 } : out;
+}
+
+const MONTH_MS = 30.4375 * 86_400_000;
+
+function buildTrend(rows: { comp: { id: string; address: string; salePrice: number; sqft: number; saleDate: string } }[], asOf: Date): Trend {
+  const points: TrendPoint[] = rows
+    .map((r) => ({ id: r.comp.id, address: r.comp.address || "Unnamed comp", ts: Date.parse(r.comp.saleDate), ppsf: r.comp.sqft > 0 ? r.comp.salePrice / r.comp.sqft : NaN }))
+    .filter((p) => Number.isFinite(p.ts) && p.ts <= asOf.getTime() && Number.isFinite(p.ppsf) && p.ppsf > 0)
+    .sort((a, b) => a.ts - b.ts);
+  const empty = { slopePctPerMonth: null, r2: null, intercept: null, slopePerMs: null };
+  if (points.length < 4) return { points, ...empty, note: `A trend line needs at least 4 dated comps (this report has ${points.length}).` };
+  const span = points[points.length - 1].ts - points[0].ts;
+  if (span < 60 * 86_400_000) return { points, ...empty, note: "The sales fall within two months of each other, which is too short to read a trend." };
+  const xs = points.map((p) => p.ts - points[0].ts);
+  const ys = points.map((p) => p.ppsf);
+  const mx = mean(xs), my = mean(ys);
+  const sxx = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
+  const sxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+  const slope = sxy / sxx;
+  const intercept = my - slope * mx;
+  const ssTot = ys.reduce((s, y) => s + (y - my) ** 2, 0);
+  const ssRes = ys.reduce((s, y, i) => s + (y - (intercept + slope * xs[i])) ** 2, 0);
+  const r2 = ssTot > 0 ? 1 - ssRes / ssTot : null;
+  return {
+    points,
+    slopePctPerMonth: ((slope * MONTH_MS) / my) * 100,
+    r2,
+    intercept,
+    slopePerMs: slope,
+    note: `Indicative only: a straight line through ${points.length} sales${r2 === null ? "" : ` explains ${Math.round(r2 * 100)}% of the variation in price per sq ft`}.`,
+  };
+}
 
 export function buildReport(project: Project, asOf: Date = new Date()): Report {
   const a = analyze(project);
@@ -109,44 +176,54 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
 
   const factors: Factor[] = [
     {
-      key: "count", label: "Number of comparable sales",
+      key: "count", weight: 1, weightPct: 20, label: "Number of comparable sales",
       score: COUNT_SCORES[Math.min(n, 5)],
       value: `${n} comp${n === 1 ? "" : "s"} used`,
       rule: "Full marks at 5 or more; 3 is the usual minimum.",
     },
     {
-      key: "recency", label: "How recently the comps sold",
+      key: "recency", weight: 1, weightPct: 20, label: "How recently the comps sold",
       score: ages.length ? lin(median(ages), 90, 365) : null,
       value: ages.length ? `Median ${Math.round(median(ages))} days since sale (${ages.length} of ${n} dated)` : "No sale dates entered",
       rule: "Full marks at 90 days or less, falling to zero at 12 months.",
     },
     {
-      key: "proximity", label: "How close the comps are",
+      key: "proximity", weight: 1, weightPct: 20, label: "How close the comps are",
       score: dists.length ? lin(mean(dists), 0.5, 3) : null,
       value: dists.length ? `Average ${mean(dists).toFixed(1)} mi (${dists.length} of ${n} entered)` : "No distances entered",
       rule: "Full marks at half a mile or less, falling to zero at 3 miles.",
     },
     {
-      key: "similarity", label: "How little the comps needed adjusting",
+      key: "similarity", weight: 1, weightPct: 20, label: "How little the comps needed adjusting",
       score: avgGross === null ? null : lin(avgGross, 10, 40),
       value: avgGross === null ? "No comps" : `Average gross adjustment ${avgGross.toFixed(1)}% of sale price`,
       rule: "Full marks at 10% or less, falling to zero at 40%.",
     },
     {
-      key: "consistency", label: "How closely the adjusted prices agree",
+      key: "consistency", weight: 1, weightPct: 20, label: "How closely the adjusted prices agree",
       score: cvPct === null ? null : lin(cvPct, 3, 15),
       value: cvPct === null ? "Needs at least 2 comps" : `Adjusted prices vary by ${cvPct.toFixed(1)}% (standard deviation)`,
       rule: "Full marks at 3% or less, falling to zero at 15%.",
     },
   ];
 
+  const weights = resolveWeights(project.checkWeights);
+  const totalW = FACTOR_KEYS.reduce((s, k) => s + weights[k], 0);
+  for (const f of factors) { f.weight = weights[f.key]; f.weightPct = (weights[f.key] / totalW) * 100; }
+  const customWeights = FACTOR_KEYS.some((k) => weights[k] !== 1);
   // Missing data counts as zero so that leaving fields blank can never raise the score.
-  let score = Math.round(mean(factors.map((f) => f.score ?? 0)));
+  const weighted = (w: Record<FactorKey, number>) => {
+    const t = FACTOR_KEYS.reduce((s, k) => s + w[k], 0);
+    return factors.reduce((s, f) => s + (f.score ?? 0) * w[f.key], 0) / t;
+  };
+  let score = Math.round(weighted(weights));
+  let equalWeightScore = Math.round(weighted({ count: 1, recency: 1, proximity: 1, similarity: 1, consistency: 1 }));
   const usingDefaultRates = (Object.keys(DEFAULT_RATES) as (keyof typeof DEFAULT_RATES)[]).every((k) => rates[k] === DEFAULT_RATES[k]);
   const caps: string[] = [];
-  if (n < 3) { score = Math.min(score, 55); caps.push("Fewer than 3 comparable sales: capped at Limited."); }
+  if (n < 3) { score = Math.min(score, 55); equalWeightScore = Math.min(equalWeightScore, 55); caps.push("Fewer than 3 comparable sales: capped at Limited."); }
   if (usingDefaultRates && !project.ratesBasis?.trim()) {
     score = Math.min(score, 79);
+    equalWeightScore = Math.min(equalWeightScore, 79);
     caps.push("Adjustment rates are the app's placeholder defaults with no stated basis: capped at Moderate.");
   }
 
@@ -159,11 +236,17 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   if (ages.length < n) limitations.push(`${n - ages.length} of ${n} comps have no valid sale date.`);
   if (dists.length < n) limitations.push(`${n - dists.length} of ${n} comps have no distance entered.`);
   if (n < 3) limitations.push("Fewer than three comparable sales were used, which is thin support for a value range.");
+  const trend = buildTrend(a.rows, asOf);
+  if (trend.slopePctPerMonth !== null && Math.abs(trend.slopePctPerMonth) >= 0.5 && (trend.r2 ?? 0) >= 0.5)
+    limitations.push(`Prices per sq ft in these sales are ${trend.slopePctPerMonth > 0 ? "rising" : "falling"} about ${Math.abs(trend.slopePctPerMonth).toFixed(1)}% per month, but comps are not adjusted for date of sale. ${trend.slopePctPerMonth > 0 ? "Older comps may understate" : "Older comps may overstate"} current value.`);
+  if (customWeights) limitations.push(`The five reliability checks were weighted by the preparer rather than equally. With equal weights the score would be ${equalWeightScore}/100 (${gradeFor(equalWeightScore)}).`);
   limitations.push("Condition, upgrades, lot, view and market-timing differences are only reflected through each comp's manual 'other adjustment'.");
   limitations.push("This is a comparative market analysis based on the data entered. It is not an appraisal and should not be used for lending decisions.");
 
   return {
     asOf: asOf.toISOString(),
+    customWeights, equalWeightScore, equalWeightGrade: gradeFor(equalWeightScore),
+    trend,
     count: n, comps, factors, score, grade: gradeFor(score), caps, limitations,
     usingDefaultRates, spreadPct, cvPct,
   };

@@ -42,6 +42,8 @@ export interface Project {
   preparedFor?: string;
   /** Where the adjustment rates came from (paired sales study, appraiser input, ...). */
   ratesBasis?: string;
+  /** Relative importance of each reliability check (0-10). Missing = 1 (equal weighting). */
+  checkWeights?: Partial<Record<"count" | "recency" | "proximity" | "similarity" | "consistency", number>>;
 }
 
 export const DEFAULT_RATES: Rates = { perSqft: 60, perBed: 5000, perBath: 7500, perYear: 500 };
