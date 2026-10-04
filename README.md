@@ -94,6 +94,13 @@ Pick the type first on every analysis; all reports, the CSV and the buyer checkl
 
 A floor, parking, fee or acreage figure is used only when it is entered for **both** the subject and the comp, so a blank never invents an adjustment (an entered 0 is a real answer). A higher monthly fee for the subject lowers its value. The thresholds live in `src/lib/profile.ts` and the placeholder rates in `src/lib/comps.ts`; the placeholder rates are starting points that the app flags and caps the reliability grade for until you set your own. Each type also gets its own limitation note and buyer checklist. "Apartment" and "condominium" mean a single unit; valuing a whole apartment building (multifamily, by income) is not covered.
 
+## Add comps by speaking or typing
+
+On step 3, "Add comps by speaking or typing" takes a sentence like *"48 Oak Avenue, sold for $412,000 on August 14, 1,790 square feet, 3 beds, 2 baths, built 1995, 0.3 miles away"*, from the keyboard or the microphone, and turns it into comp fields. Say "next comp" (or start a new line) for more. It shows what it understood for checking before anything is added, fills empty placeholder rows first, respects the plan's comp limit, and never invents a value: a field it didn't hear stays empty.
+
+- **Speaking** uses the browser's own speech recogniser (Chrome, Edge and Safari have one; Firefox doesn't, and there the microphone button is simply absent while typing still works). The browser sends the audio to its speech service, so the app asks for confirmation the first time and the privacy page says so. CompPilot never receives audio. Inside the iOS and Android wrapper the browser recogniser isn't available; a native speech plugin would be needed (see `docs/native-apps.md`).
+- **Understanding** is English only for now (numbers in digits or words, ordinals, halves and quarters, month names, floor/parking/fee for apartments and condos, acres for estates and land). It is a plain pattern reader in `src/voice/parse.ts`; supporting another language means adding that language's number words, month names and keywords. In other app languages the panel says so and still works if you speak or type in English.
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 

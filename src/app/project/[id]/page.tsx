@@ -8,6 +8,8 @@ import { useEntitlements } from "@/billing/entitlements";
 import { GatedButton } from "@/billing/ui";
 import { countryOptions } from "@/market/countries";
 import { MarketPanel } from "@/market/panel";
+import { VoiceEntry } from "@/voice/entry";
+import { applyParsedComps } from "@/voice/apply";
 import { readMoney, showMoney, type Vars } from "@/i18n/format";
 import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
 import { analyze, defaultRatesFor, exampleData, isEstate, isLand, isUnit, newComp, PROPERTY_KINDS, type Analysis, type Comp, type GeoPoint, type Project, type PropertyKind, type Rates, type Subject } from "@/lib/comps";
@@ -414,6 +416,10 @@ export default function ProjectPage() {
             {atCompLimit && lockedCount === 0 && ent.billingEnabled && (
               <p className="no-print muted text-sm" role="note">{t("billing.limit.comps", { count: ent.maxComps })}</p>
             )}
+            <VoiceEntry
+              kind={kind} defaultOpen={project.comps.every((c) => !complete(c))}
+              onApply={(parsed) => { const r = applyParsedComps(project.comps, parsed, newComp, ent.maxComps); set({ comps: r.comps }); return { added: r.added, skipped: r.skipped }; }}
+            />
             {removed && (
               <div className="card no-print flex items-center justify-between gap-3 px-4 py-2 text-sm">
                 <span>{t("comp.removed")}</span>

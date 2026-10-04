@@ -51,6 +51,10 @@ export default function Privacy() {
         <p>If you choose to locate addresses, the address text you typed is sent to a geocoding service to find it on a map (by default OpenStreetMap&apos;s Nominatim). When a map is shown, your device requests map tiles from a tile provider (by default OpenStreetMap), which can see your IP address and the area you are viewing. These services have their own privacy policies. Nothing is sent unless you use these features.</p>
       </Block>
 
+      <Block title="Speaking and typing comps">
+        <p>If you use the microphone to add comps, your browser records your voice while you press Speak and sends it to its own speech-recognition service (for example Google in Chrome, or Apple in Safari) to turn it into text. The browser asks you to confirm this the first time. CompPilot receives only the text, which stays on your device until you add the comps; we never receive the audio. Typing works everywhere and sends nothing.</p>
+      </Block>
+
       <Block title="Market data">
         <p>The daily market figures come from public national price indices (currently the Bank for International Settlements). They are downloaded by our server and contain no personal data. When you view them, we receive only the country you picked.</p>
       </Block>

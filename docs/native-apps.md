@@ -47,6 +47,10 @@ As far as I know, both stores require their own purchase system for subscription
 - *Prices.* Store prices come from fixed price points, and the commission is taken from them. Decide whether in-app prices match the web or are higher.
 - *Existing web subscribers.* They keep their plan in the app (built). Whether the app may mention that plans can be bought on the web depends on the country and the current rules.
 
+## Speaking comps in the native apps
+
+The "speak a comp" button uses the browser's speech recogniser, which the iOS and Android web views don't have, so inside the store apps only typing is offered until a native speech plugin is added (for example `@capacitor-community/speech-recognition`). When you add one: iOS needs `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` in `Info.plist`, Android needs the `RECORD_AUDIO` permission, and both stores' privacy forms must list audio/voice processing (iOS recognition may use Apple's servers).
+
 ## Before you submit
 
 - Apple Developer Program (US$99 a year) and Google Play Console (one-off US$25).
