@@ -144,10 +144,10 @@ export function newComp(): Comp {
   };
 }
 
-export function newProject(): Project {
+export function newProject(name = "Untitled analysis"): Project {
   return {
     id: crypto.randomUUID(),
-    name: "Untitled analysis",
+    name,
     subject: { address: "", sqft: 0, beds: 0, baths: 0, yearBuilt: 0 },
     comps: [newComp(), newComp(), newComp()],
     rates: { ...DEFAULT_RATES },
@@ -159,11 +159,11 @@ export const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 /** Illustrative data so a new user can see the tool working before typing their own. */
-export function exampleData(): Pick<Project, "name" | "subject" | "comps"> {
+export function exampleData(name = "Example: 12 Maple St"): Pick<Project, "name" | "subject" | "comps"> {
   const mk = (address: string, salePrice: number, saleDate: string, sqft: number, beds: number, baths: number, yearBuilt: number, distanceMi: number): Comp =>
     ({ ...newComp(), address, salePrice, saleDate, sqft, beds, baths, yearBuilt, distanceMi });
   return {
-    name: "Example: 12 Maple St",
+    name,
     subject: { address: "12 Maple St", sqft: 1850, beds: 3, baths: 2, yearBuilt: 1998 },
     comps: [
       mk("48 Oak Ave", 412000, "2026-08-14", 1790, 3, 2, 1995, 0.3),

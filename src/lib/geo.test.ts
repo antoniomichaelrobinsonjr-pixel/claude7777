@@ -59,10 +59,11 @@ test("geocode: not found, blank input, rate limit, server error and network fail
   assert.deepEqual(await geocodeAddress("nowhere", { fetchImpl: ok([]) }), { status: "not_found" });
   assert.deepEqual(await geocodeAddress("   ", { fetchImpl: ok([]) }), { status: "not_found" });
   const limited = await geocodeAddress("x", { fetchImpl: ok({}, 429) });
-  assert.equal(limited.status, "error");
-  assert.ok(limited.status === "error" && limited.message.includes("slow down"));
+  assert.deepEqual(limited, { status: "error", code: "rate_limited", httpStatus: 429 });
   const bad = await geocodeAddress("x", { fetchImpl: ok({}, 500) });
-  assert.ok(bad.status === "error" && bad.message.includes("500"));
+  assert.deepEqual(bad, { status: "error", code: "http", httpStatus: 500 });
   const down = await geocodeAddress("x", { fetchImpl: (async () => { throw new TypeError("fetch failed"); }) as unknown as typeof fetch });
-  assert.ok(down.status === "error" && down.message.includes("Could not reach"));
+  assert.deepEqual(down, { status: "error", code: "network" });
+  const aborted = await geocodeAddress("x", { fetchImpl: (async () => { const e = new Error("aborted"); e.name = "AbortError"; throw e; }) as unknown as typeof fetch });
+  assert.deepEqual(aborted, { status: "error", code: "cancelled" });
 });

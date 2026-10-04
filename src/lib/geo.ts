@@ -36,7 +36,7 @@ export function parseNominatim(json: unknown, query: string): GeoPoint | null {
 export type GeocodeResult =
   | { status: "ok"; point: GeoPoint }
   | { status: "not_found" }
-  | { status: "error"; message: string };
+  | { status: "error"; code: "rate_limited" | "http" | "network" | "cancelled"; httpStatus?: number };
 
 export const DEFAULT_GEOCODER_URL = "https://nominatim.openstreetmap.org/search";
 
@@ -50,11 +50,11 @@ export async function geocodeAddress(
   const url = `${base}${base.includes("?") ? "&" : "?"}format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
   try {
     const res = await (opts.fetchImpl ?? fetch)(url, { headers: { Accept: "application/json" }, signal: opts.signal });
-    if (!res.ok) return { status: "error", message: res.status === 429 ? "The geocoding service asked us to slow down. Try again in a minute." : `The geocoding service returned an error (${res.status}).` };
+    if (!res.ok) return res.status === 429 ? { status: "error", code: "rate_limited", httpStatus: 429 } : { status: "error", code: "http", httpStatus: res.status };
     const point = parseNominatim(await res.json(), query);
     return point ? { status: "ok", point } : { status: "not_found" };
   } catch (e) {
-    return { status: "error", message: e instanceof Error && e.name === "AbortError" ? "Cancelled." : "Could not reach the geocoding service." };
+    return { status: "error", code: e instanceof Error && e.name === "AbortError" ? "cancelled" : "network" };
   }
 }
 

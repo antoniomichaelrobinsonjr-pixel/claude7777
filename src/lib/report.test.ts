@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { buildReport, gradeFor } from "./report.ts";
 import { DEFAULT_RATES, type Comp, type Project } from "./comps.ts";
 
+import type { Msg } from "../i18n/format.ts";
 const ASOF = new Date("2026-10-01T00:00:00Z");
+/** True if any message in the list has this key. */
+const has = (list: Msg[], key: string) => list.some((m) => m.key === key);
+const find = (list: Msg[], key: string) => list.find((m) => m.key === key);
+const numOf = (v: unknown) => (typeof v === "object" && v !== null ? (v as { v: number }).v : (v as number));
 const comp = (o: Partial<Comp>): Comp => ({
   id: Math.random().toString(36).slice(2), address: "a", salePrice: 400000, saleDate: "2026-09-01",
   sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, distanceMi: 0.3, otherAdj: 0, included: true, source: "MLS", ...o,
@@ -32,8 +37,8 @@ test("placeholder default rates cap the grade at Moderate and are disclosed", ()
   const r = buildReport(project(five(), { rates: { ...DEFAULT_RATES }, ratesBasis: "" }), ASOF);
   assert.ok(r.score <= 79);
   assert.equal(r.usingDefaultRates, true);
-  assert.ok(r.caps.some((c) => c.includes("placeholder")));
-  assert.ok(r.limitations.some((l) => l.includes("not been derived from market data")));
+  assert.ok(has(r.caps, "cap.rates"));
+  assert.ok(has(r.limitations, "lim.ratesDefault"));
 });
 
 test("stating a basis for default-valued rates lifts the cap", () => {
@@ -45,7 +50,7 @@ test("fewer than 3 comps caps the grade at Limited", () => {
   const r = buildReport(project([comp({}), comp({})]), ASOF);
   assert.ok(r.score <= 55);
   assert.notEqual(r.grade, "High");
-  assert.ok(r.limitations.some((l) => l.includes("Fewer than three")));
+  assert.ok(has(r.limitations, "lim.fewComps"));
 });
 
 test("missing dates and distances never raise the score", () => {
@@ -60,17 +65,17 @@ test("stale, distant, heavily adjusted comps score worse than fresh, close ones"
   const bad = five().map((c) => ({ ...c, saleDate: "2025-08-01", distanceMi: 2.8, sqft: 4000 }));
   const r = buildReport(project(bad), ASOF);
   assert.ok(r.score < buildReport(project(five()), ASOF).score);
-  assert.ok(r.comps[0].flags.some((f) => f.includes("6 months")));
-  assert.ok(r.comps[0].flags.some((f) => f.includes("Heavily adjusted")));
+  assert.ok(has(r.comps[0].flags, "flag.old"));
+  assert.ok(has(r.comps[0].flags, "flag.heavy"));
 });
 
 test("outlier is flagged and unsourced comps are called out", () => {
   const comps = [comp({}), comp({}), comp({}), comp({ salePrice: 520000, source: "" })];
   const r = buildReport(project(comps), ASOF);
   const out = r.comps[3];
-  assert.ok(out.flags.some((f) => f.includes("median")));
-  assert.ok(out.flags.includes("No source recorded"));
-  assert.ok(r.limitations.some((l) => l.includes("no recorded source")));
+  assert.ok(has(out.flags, "flag.outlier"));
+  assert.ok(has(out.flags, "flag.noSource"));
+  assert.ok(has(r.limitations, "lim.noSource"));
 });
 
 test("age is measured from the report date", () => {
@@ -93,7 +98,7 @@ test("custom weights change the score and are disclosed alongside the equal-weig
   assert.equal(heavy.customWeights, true);
   assert.ok(heavy.score < base.score);
   assert.equal(heavy.equalWeightScore, base.score);
-  assert.ok(heavy.limitations.some((l) => l.includes("weighted by the preparer")));
+  assert.ok(has(heavy.limitations, "lim.customWeights"));
   assert.ok(Math.abs(heavy.factors.reduce((s, f) => s + f.weightPct, 0) - 100) < 1e-9);
 });
 
@@ -126,10 +131,10 @@ test("trend: fits a rising market and reports the monthly change", () => {
 test("trend: refuses to draw a line from too little data", () => {
   const few = buildReport(project([comp({}), comp({}), comp({})]), ASOF);
   assert.equal(few.trend.slopePctPerMonth, null);
-  assert.ok(few.trend.note.includes("at least 4"));
+  assert.equal(few.trend.note.key, "trend.note.tooFew");
   const close = buildReport(project(five()), ASOF); // all sold the same day
   assert.equal(close.trend.slopePctPerMonth, null);
-  assert.ok(close.trend.note.includes("two months"));
+  assert.equal(close.trend.note.key, "trend.note.short");
 });
 
 test("trend ignores comps with no date, no size, or a future date", () => {
@@ -143,9 +148,9 @@ test("a strong price trend is called out as an unadjusted timing risk", () => {
     return comp({ saleDate: d, sqft: 2000, salePrice: Math.round(2000 * 200 * (1 + 0.012 * months)) });
   };
   const r = buildReport(project([mk(0), mk(2), mk(4), mk(6)]), ASOF);
-  assert.ok(r.limitations.some((l) => l.includes("rising") && l.includes("not adjusted for date of sale")));
+  assert.ok(has(r.limitations, "lim.trendRising"));
   const flat = buildReport(project(five()), ASOF);
-  assert.ok(!flat.limitations.some((l) => l.includes("not adjusted for date of sale")));
+  assert.ok(!has(flat.limitations, "lim.trendRising") && !has(flat.limitations, "lim.trendFalling"));
 });
 
 const geo = (lat: number, lng: number, address: string, precise = true) => ({ lat, lng, label: `matched: ${address}`, query: address, precise });
@@ -158,11 +163,17 @@ test("a typed distance shorter than the straight line is flagged and the map dis
   const liar = withGeo(comp({ distanceMi: 0.3 }), "B", 38.92);   // ~1.38 mi: impossible
   const r = buildReport(project([near, liar, comp({})], { subject: subj }), ASOF);
   assert.ok(r.comps[0].mapDistanceMi! > 0.6 && r.comps[0].mapDistanceMi! < 0.8);
-  assert.ok(!r.comps[0].flags.some((f) => f.includes("shorter than")));
-  assert.ok(r.comps[1].flags.some((f) => f.includes("Entered distance (0.3 mi) is shorter than the straight-line map distance (1.4 mi)")));
+  assert.ok(!has(r.comps[0].flags, "flag.shorter"));
+  const short = find(r.comps[1].flags, "flag.shorter");
+  assert.ok(short, "flag.shorter present");
+  assert.equal(numOf(short!.vars!.entered), 0.3);
+  assert.equal(Math.round(numOf(short!.vars!.map) * 10) / 10, 1.4);
   assert.ok(Math.abs(r.comps[1].distanceMi! - r.comps[1].mapDistanceMi!) < 1e-9, "scored on the map distance");
   assert.equal(r.mapped, 2);
-  assert.ok(r.limitations.some((l) => l.includes("1 of 3 comps are not on the map")));
+  const off = find(r.limitations, "lim.notOnMap");
+  assert.ok(off);
+  assert.equal(off!.vars!.count, 1);
+  assert.equal(off!.vars!.total, 3);
 });
 
 test("a typed distance longer than the straight line is accepted (roads are longer than straight lines)", () => {
@@ -170,7 +181,7 @@ test("a typed distance longer than the straight line is accepted (roads are long
   const c = withGeo(comp({ distanceMi: 1.1 }), "A", 38.91); // map ~0.69 mi
   const r = buildReport(project([c], { subject: subj }), ASOF);
   assert.equal(r.comps[0].distanceMi, 1.1);
-  assert.ok(!r.comps[0].flags.some((f) => f.includes("shorter than")));
+  assert.ok(!has(r.comps[0].flags, "flag.shorter"));
 });
 
 test("a mistyped short distance cannot flatter the grade once the map disagrees", () => {
@@ -187,7 +198,7 @@ test("computed distances are not flagged against themselves and set the basis to
   const c = withGeo(comp({ distanceMi: 0.7, distanceComputed: true }), "A", 38.95);
   const r = buildReport(project([c], { subject: subj }), ASOF);
   assert.equal(r.distanceBasis, "map");
-  assert.ok(!r.comps[0].flags.some((f) => f.includes("shorter than")));
+  assert.ok(!has(r.comps[0].flags, "flag.shorter"));
   assert.equal(buildReport(project([comp({})]), ASOF).distanceBasis, "entered");
 });
 
@@ -203,8 +214,8 @@ test("area-level matches are flagged and disclosed; no geocoding at all adds no 
   const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
   const c = { ...comp({}), address: "A", geo: geo(38.91, -77, "A", false) };
   const r = buildReport(project([c], { subject: subj }), ASOF);
-  assert.ok(r.comps[0].flags.includes("Address matched only to the area, not the building"));
-  assert.ok(r.limitations.some((l) => l.includes("approximate")));
+  assert.ok(has(r.comps[0].flags, "flag.areaOnly"));
+  assert.ok(has(r.limitations, "lim.areaMatches"));
   const none = buildReport(project(five()), ASOF);
-  assert.ok(!none.limitations.some((l) => l.includes("map")));
+  assert.ok(!has(none.limitations, "lim.notOnMap") && !has(none.limitations, "lim.subjectNotLocated") && !has(none.limitations, "lim.areaMatches"));
 });

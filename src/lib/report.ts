@@ -1,5 +1,6 @@
 import { analyze, DEFAULT_RATES, type GeoPoint, type Project } from "./comps.ts";
 import { haversineMiles, validGeo } from "./geo.ts";
+import { msg, n as num, type Msg } from "../i18n/format.ts";
 
 /** Linear score: 100 when value <= full, 0 when value >= zero. */
 const lin = (value: number, full: number, zero: number) =>
@@ -24,7 +25,8 @@ export interface CompEvidence {
   netAdjPct: number;
   /** How far the adjusted price sits from the median adjusted price. */
   deviationPct: number;
-  flags: string[];
+  /** Things a careful reader should know about this comp, as translatable messages. */
+  flags: Msg[];
 }
 
 export type FactorKey = "count" | "recency" | "proximity" | "similarity" | "consistency";
@@ -32,15 +34,14 @@ export const FACTOR_KEYS: FactorKey[] = ["count", "recency", "proximity", "simil
 
 export interface Factor {
   key: FactorKey;
-  label: string;
   /** Share of the overall score this check carries, in percent. */
   weightPct: number;
   /** Raw weight the preparer set (0-10); 1 when untouched. */
   weight: number;
   /** 0-100, or null when the data needed to score it was not provided. */
   score: number | null;
-  value: string;
-  rule: string;
+  /** What was measured, as a translatable message. Labels and rules are looked up by factor key. */
+  value: Msg;
 }
 
 export type Grade = "High" | "Moderate" | "Limited" | "Low";
@@ -55,7 +56,7 @@ export interface Trend {
   r2: number | null;
   intercept: number | null;
   slopePerMs: number | null;
-  note: string;
+  note: Msg;
 }
 
 export type DistanceBasis = "map" | "entered" | "mixed" | "none";
@@ -78,9 +79,9 @@ export interface Report {
   score: number;
   grade: Grade;
   /** Reasons the grade was capped below what the raw score would give. */
-  caps: string[];
+  caps: Msg[];
   /** Plain statements about what the estimate does and does not rest on. */
-  limitations: string[];
+  limitations: Msg[];
   usingDefaultRates: boolean;
   spreadPct: number;
   cvPct: number | null;
@@ -112,13 +113,13 @@ const MONTH_MS = 30.4375 * 86_400_000;
 
 function buildTrend(rows: { comp: { id: string; address: string; salePrice: number; sqft: number; saleDate: string } }[], asOf: Date): Trend {
   const points: TrendPoint[] = rows
-    .map((r) => ({ id: r.comp.id, address: r.comp.address || "Unnamed comp", ts: Date.parse(r.comp.saleDate), ppsf: r.comp.sqft > 0 ? r.comp.salePrice / r.comp.sqft : NaN }))
+    .map((r) => ({ id: r.comp.id, address: r.comp.address, ts: Date.parse(r.comp.saleDate), ppsf: r.comp.sqft > 0 ? r.comp.salePrice / r.comp.sqft : NaN }))
     .filter((p) => Number.isFinite(p.ts) && p.ts <= asOf.getTime() && Number.isFinite(p.ppsf) && p.ppsf > 0)
     .sort((a, b) => a.ts - b.ts);
   const empty = { slopePctPerMonth: null, r2: null, intercept: null, slopePerMs: null };
-  if (points.length < 4) return { points, ...empty, note: `A trend line needs at least 4 dated comps (this report has ${points.length}).` };
+  if (points.length < 4) return { points, ...empty, note: msg("trend.note.tooFew", { count: points.length }) };
   const span = points[points.length - 1].ts - points[0].ts;
-  if (span < 60 * 86_400_000) return { points, ...empty, note: "The sales fall within two months of each other, which is too short to read a trend." };
+  if (span < 60 * 86_400_000) return { points, ...empty, note: msg("trend.note.short") };
   const xs = points.map((p) => p.ts - points[0].ts);
   const ys = points.map((p) => p.ppsf);
   const mx = mean(xs), my = mean(ys);
@@ -135,7 +136,7 @@ function buildTrend(rows: { comp: { id: string; address: string; salePrice: numb
     r2,
     intercept,
     slopePerMs: slope,
-    note: `Indicative only: a straight line through ${points.length} sales${r2 === null ? "" : ` explains ${Math.round(r2 * 100)}% of the variation in price per sq ft`}.`,
+    note: r2 === null ? msg("trend.note.fitNoR2", { count: points.length }) : msg("trend.note.fit", { count: points.length, pct: num.pct0(r2 * 100) }),
   };
 }
 
@@ -151,25 +152,25 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
     const mapDistanceMi = subjectGeo && geo ? haversineMiles(subjectGeo, geo) : null;
     const t = c.saleDate ? Date.parse(c.saleDate) : NaN;
     const ageDays = Number.isFinite(t) ? Math.floor((asOf.getTime() - t) / 86_400_000) : null;
-    const flags: string[] = [];
-    if (ageDays === null) flags.push("No sale date");
-    else if (ageDays < 0) flags.push("Sale date is in the future");
-    else if (ageDays > 180) flags.push("Sold more than 6 months ago");
+    const flags: Msg[] = [];
+    if (ageDays === null) flags.push(msg("flag.noDate"));
+    else if (ageDays < 0) flags.push(msg("flag.future"));
+    else if (ageDays > 180) flags.push(msg("flag.old"));
     const entered = c.distanceMi > 0 ? c.distanceMi : null;
     // A straight line is the shortest possible route, so when the map gives a distance the larger of the two is used.
     const distance = mapDistanceMi !== null ? Math.max(entered ?? 0, mapDistanceMi) : entered;
-    if (distance === null) flags.push("No distance entered");
-    else if (distance > 1) flags.push("More than 1 mile away");
+    if (distance === null) flags.push(msg("flag.noDist"));
+    else if (distance > 1) flags.push(msg("flag.far"));
     if (mapDistanceMi !== null && entered !== null && !c.distanceComputed && mapDistanceMi - entered > 0.25)
-      flags.push(`Entered distance (${entered.toFixed(1)} mi) is shorter than the straight-line map distance (${mapDistanceMi.toFixed(1)} mi); the map distance is used`);
-    if (geo && !geo.precise) flags.push("Address matched only to the area, not the building");
-    if (!c.source?.trim()) flags.push("No source recorded");
-    if (r.grossAdjPct > 25) flags.push("Heavily adjusted (over 25%)");
+      flags.push(msg("flag.shorter", { entered: num.dec1(entered), map: num.dec1(mapDistanceMi) }));
+    if (geo && !geo.precise) flags.push(msg("flag.areaOnly"));
+    if (!c.source?.trim()) flags.push(msg("flag.noSource"));
+    if (r.grossAdjPct > 25) flags.push(msg("flag.heavy"));
     const deviationPct = med > 0 ? ((r.adjustedPrice - med) / med) * 100 : 0;
-    if (a.count >= 3 && Math.abs(deviationPct) > 10) flags.push("Adjusted price differs from the median by over 10%");
+    if (a.count >= 3 && Math.abs(deviationPct) > 10) flags.push(msg("flag.outlier"));
     return {
       id: c.id,
-      address: c.address || "Unnamed comp",
+      address: c.address,
       source: c.source?.trim() ?? "",
       salePrice: c.salePrice,
       adjustedPrice: r.adjustedPrice,
@@ -204,34 +205,31 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
 
   const factors: Factor[] = [
     {
-      key: "count", weight: 1, weightPct: 20, label: "Number of comparable sales",
+      key: "count", weight: 1, weightPct: 20,
       score: COUNT_SCORES[Math.min(n, 5)],
-      value: `${n} comp${n === 1 ? "" : "s"} used`,
-      rule: "Full marks at 5 or more; 3 is the usual minimum.",
+      value: msg("factor.count.value", { count: n }),
     },
     {
-      key: "recency", weight: 1, weightPct: 20, label: "How recently the comps sold",
+      key: "recency", weight: 1, weightPct: 20,
       score: ages.length ? lin(median(ages), 90, 365) : null,
-      value: ages.length ? `Median ${Math.round(median(ages))} days since sale (${ages.length} of ${n} dated)` : "No sale dates entered",
-      rule: "Full marks at 90 days or less, falling to zero at 12 months.",
+      value: ages.length ? msg("factor.recency.value", { days: num.int(median(ages)), dated: ages.length, total: n }) : msg("factor.recency.none"),
     },
     {
-      key: "proximity", weight: 1, weightPct: 20, label: "How close the comps are",
+      key: "proximity", weight: 1, weightPct: 20,
       score: dists.length ? lin(mean(dists), 0.5, 3) : null,
-      value: dists.length ? `Average ${mean(dists).toFixed(1)} mi (${dists.length} of ${n} ${distanceBasis === "map" ? "measured or checked on the map" : "entered"})` : "No distances entered",
-      rule: "Full marks at half a mile or less, falling to zero at 3 miles.",
+      value: dists.length
+        ? msg(distanceBasis === "map" ? "factor.proximity.valueMap" : "factor.proximity.valueEntered", { miles: num.dec1(mean(dists)), k: dists.length, total: n })
+        : msg("factor.proximity.none"),
     },
     {
-      key: "similarity", weight: 1, weightPct: 20, label: "How little the comps needed adjusting",
+      key: "similarity", weight: 1, weightPct: 20,
       score: avgGross === null ? null : lin(avgGross, 10, 40),
-      value: avgGross === null ? "No comps" : `Average gross adjustment ${avgGross.toFixed(1)}% of sale price`,
-      rule: "Full marks at 10% or less, falling to zero at 40%.",
+      value: avgGross === null ? msg("factor.similarity.none") : msg("factor.similarity.value", { pct: num.pct1(avgGross) }),
     },
     {
-      key: "consistency", weight: 1, weightPct: 20, label: "How closely the adjusted prices agree",
+      key: "consistency", weight: 1, weightPct: 20,
       score: cvPct === null ? null : lin(cvPct, 3, 15),
-      value: cvPct === null ? "Needs at least 2 comps" : `Adjusted prices vary by ${cvPct.toFixed(1)}% (standard deviation)`,
-      rule: "Full marks at 3% or less, falling to zero at 15%.",
+      value: cvPct === null ? msg("factor.consistency.none") : msg("factor.consistency.value", { pct: num.pct1(cvPct) }),
     },
   ];
 
@@ -247,34 +245,33 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   let score = Math.round(weighted(weights));
   let equalWeightScore = Math.round(weighted({ count: 1, recency: 1, proximity: 1, similarity: 1, consistency: 1 }));
   const usingDefaultRates = (Object.keys(DEFAULT_RATES) as (keyof typeof DEFAULT_RATES)[]).every((k) => rates[k] === DEFAULT_RATES[k]);
-  const caps: string[] = [];
-  if (n < 3) { score = Math.min(score, 55); equalWeightScore = Math.min(equalWeightScore, 55); caps.push("Fewer than 3 comparable sales: capped at Limited."); }
+  const caps: Msg[] = [];
+  if (n < 3) { score = Math.min(score, 55); equalWeightScore = Math.min(equalWeightScore, 55); caps.push(msg("cap.fewComps")); }
   if (usingDefaultRates && !project.ratesBasis?.trim()) {
     score = Math.min(score, 79);
     equalWeightScore = Math.min(equalWeightScore, 79);
-    caps.push("Adjustment rates are the app's placeholder defaults with no stated basis: capped at Moderate.");
+    caps.push(msg("cap.rates"));
   }
 
-  const limitations: string[] = [];
-  if (usingDefaultRates && !project.ratesBasis?.trim())
-    limitations.push("The dollar adjustment rates have not been derived from market data. They drive every adjusted price, so the value is only as reliable as these rates.");
-  else if (!project.ratesBasis?.trim())
-    limitations.push("The basis for the adjustment rates was not recorded.");
-  if (comps.some((c) => !c.source)) limitations.push(`${comps.filter((c) => !c.source).length} of ${n} comps have no recorded source, so their sale details cannot be independently checked from this report.`);
-  if (ages.length < n) limitations.push(`${n - ages.length} of ${n} comps have no valid sale date.`);
-  if (dists.length < n) limitations.push(`${n - dists.length} of ${n} comps have no distance entered.`);
-  if (n < 3) limitations.push("Fewer than three comparable sales were used, which is thin support for a value range.");
+  const limitations: Msg[] = [];
+  if (usingDefaultRates && !project.ratesBasis?.trim()) limitations.push(msg("lim.ratesDefault"));
+  else if (!project.ratesBasis?.trim()) limitations.push(msg("lim.ratesNoBasis"));
+  const unsourced = comps.filter((c) => !c.source).length;
+  if (unsourced > 0) limitations.push(msg("lim.noSource", { count: unsourced, total: n }));
+  if (ages.length < n) limitations.push(msg("lim.noDate", { count: n - ages.length, total: n }));
+  if (dists.length < n) limitations.push(msg("lim.noDist", { count: n - dists.length, total: n }));
+  if (n < 3) limitations.push(msg("lim.fewComps"));
   if (mapped > 0 || subjectGeo) {
-    if (!subjectGeo) limitations.push("The subject property's address has not been located, so entered distances were not checked against the map.");
-    if (mapped < n) limitations.push(`${n - mapped} of ${n} comps are not on the map because their addresses have not been located, or were edited after locating.`);
-    if (comps.some((c) => c.geo && !c.geo.precise)) limitations.push("Some addresses were matched only to a street or area, so their map positions and distances are approximate.");
+    if (!subjectGeo) limitations.push(msg("lim.subjectNotLocated"));
+    if (mapped < n) limitations.push(msg("lim.notOnMap", { count: n - mapped, total: n }));
+    if (comps.some((c) => c.geo && !c.geo.precise)) limitations.push(msg("lim.areaMatches"));
   }
   const trend = buildTrend(a.rows, asOf);
   if (trend.slopePctPerMonth !== null && Math.abs(trend.slopePctPerMonth) >= 0.5 && (trend.r2 ?? 0) >= 0.5)
-    limitations.push(`Prices per sq ft in these sales are ${trend.slopePctPerMonth > 0 ? "rising" : "falling"} about ${Math.abs(trend.slopePctPerMonth).toFixed(1)}% per month, but comps are not adjusted for date of sale. ${trend.slopePctPerMonth > 0 ? "Older comps may understate" : "Older comps may overstate"} current value.`);
-  if (customWeights) limitations.push(`The five reliability checks were weighted by the preparer rather than equally. With equal weights the score would be ${equalWeightScore}/100 (${gradeFor(equalWeightScore)}).`);
-  limitations.push("Condition, upgrades, lot, view and market-timing differences are only reflected through each comp's manual 'other adjustment'.");
-  limitations.push("This is a comparative market analysis based on the data entered. It is not an appraisal and should not be used for lending decisions.");
+    limitations.push(msg(trend.slopePctPerMonth > 0 ? "lim.trendRising" : "lim.trendFalling", { pct: num.dec1(Math.abs(trend.slopePctPerMonth)) }));
+  if (customWeights) limitations.push(msg("lim.customWeights", { score: equalWeightScore, grade: gradeFor(equalWeightScore) }));
+  limitations.push(msg("lim.timing"));
+  limitations.push(msg("lim.notAppraisal"));
 
   return {
     asOf: asOf.toISOString(),

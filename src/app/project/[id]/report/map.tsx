@@ -2,7 +2,9 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { usd, type GeoPoint } from "@/lib/comps";
+import type { GeoPoint } from "@/lib/comps";
+import { useI18n } from "@/i18n";
+import { n } from "@/i18n/format";
 
 export interface MapComp {
   n: number;
@@ -30,8 +32,9 @@ const pin = (label: string, subject: boolean) =>
   });
 
 /** Popup content is built from text nodes: addresses are user input and must never be parsed as HTML. */
-function popup(lines: { text: string; bold?: boolean; muted?: boolean }[]) {
+function popup(lines: { text: string; bold?: boolean; muted?: boolean }[], dir: string) {
   const el = document.createElement("div");
+  el.dir = dir;
   el.style.cssText = "font:13px/1.4 system-ui,sans-serif;min-width:160px";
   for (const l of lines) {
     const d = document.createElement("div");
@@ -45,10 +48,12 @@ function popup(lines: { text: string; bold?: boolean; muted?: boolean }[]) {
 
 export default function MapView({ subject, comps }: { subject: { address: string; geo: GeoPoint } | null; comps: MapComp[] }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { t, usd, num, info } = useI18n();
 
   useEffect(() => {
     if (!ref.current) return;
-    const map = L.map(ref.current, { scrollWheelZoom: false, zoomControl: true });
+    const map = L.map(ref.current, { scrollWheelZoom: false, zoomControl: false });
+    L.control.zoom({ zoomInTitle: t("map.zoomIn"), zoomOutTitle: t("map.zoomOut") }).addTo(map);
     L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(map);
 
     const pts: L.LatLngExpression[] = [];
@@ -56,29 +61,32 @@ export default function MapView({ subject, comps }: { subject: { address: string
       const ll: L.LatLngExpression = [subject.geo.lat, subject.geo.lng];
       pts.push(ll);
       L.circle(ll, { radius: MILE_M, color: "#c9973f", weight: 1.5, fill: false, interactive: false }).addTo(map);
-      L.marker(ll, { icon: pin("S", true), title: `Subject: ${subject.address}`, zIndexOffset: 1000 })
-        .bindPopup(popup([{ text: "Subject property", bold: true }, { text: subject.address }, { text: `Matched: ${subject.geo.label}`, muted: true }]))
+      L.marker(ll, { icon: pin("S", true), title: t("map.subjectTitle", { address: subject.address }), zIndexOffset: 1000 })
+        .bindPopup(popup([{ text: t("map.subject"), bold: true }, { text: subject.address }, { text: t("map.matchedLine", { label: subject.geo.label }), muted: true }], info.dir))
         .addTo(map);
     }
     for (const c of comps) {
       const ll: L.LatLngExpression = [c.geo.lat, c.geo.lng];
       pts.push(ll);
-      L.marker(ll, { icon: pin(String(c.n), false), title: `Comp ${c.n}: ${c.address}` })
+      L.marker(ll, { icon: pin(String(c.n), false), title: t("map.compTitle", { n: c.n, address: c.address || t("common.unnamedComp") }) })
         .bindPopup(
-          popup([
-            { text: `Comp ${c.n}`, bold: true },
-            { text: c.address },
-            { text: `Sold ${usd(c.salePrice)} · adjusted ${usd(c.adjustedPrice)}` },
-            ...(c.mapDistanceMi !== null ? [{ text: `${c.mapDistanceMi.toFixed(2)} mi from the subject (straight line)` }] : []),
-            { text: `Matched: ${c.geo.label}`, muted: true },
-          ]),
+          popup(
+            [
+              { text: t("map.compN", { n: c.n }), bold: true },
+              { text: c.address || t("common.unnamedComp") },
+              { text: t("map.soldAdj", { sold: usd(c.salePrice), adjusted: usd(c.adjustedPrice) }) },
+              ...(c.mapDistanceMi !== null ? [{ text: t("map.distance", { distance: num(n.dec2(c.mapDistanceMi)) }) }] : []),
+              { text: t("map.matchedLine", { label: c.geo.label }), muted: true },
+            ],
+            info.dir,
+          ),
         )
         .addTo(map);
     }
     if (pts.length === 1) map.setView(pts[0], 15);
     else map.fitBounds(L.latLngBounds(pts), { padding: [48, 48], maxZoom: 16 });
     return () => { map.remove(); };
-  }, [subject, comps]);
+  }, [subject, comps, t, usd, num, info.dir]);
 
-  return <div ref={ref} role="region" aria-label="Map of the subject property and comparable sales" className="h-[380px] w-full overflow-hidden rounded-xl" style={{ isolation: "isolate", background: "var(--surface-2)" }} />;
+  return <div ref={ref} role="region" dir="ltr" aria-label={t("map.aria")} className="h-[380px] w-full overflow-hidden rounded-xl" style={{ isolation: "isolate", background: "var(--surface-2)" }} />;
 }
