@@ -48,12 +48,16 @@ function Sparkline({ series, label }: { series: IndexPoint[]; label: string }) {
   const pts = series.slice(-24);
   if (pts.length < 2) return null;
   const vals = pts.map((p) => p.value), lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
-  const W = 240, H = 48;
-  const d = pts.map((p, i) => `${(i / (pts.length - 1)) * W},${H - 4 - ((p.value - lo) / span) * (H - 8)}`).join(" ");
+  const W = 240, H = 64;
+  const xy = pts.map((p, i) => `${(i / (pts.length - 1)) * W},${H - 6 - ((p.value - lo) / span) * (H - 12)}`);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className="h-12 w-full max-w-xs rtl:-scale-x-100" preserveAspectRatio="none">
-      <polyline points={d} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-    </svg>
+    <div className="max-w-md">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className="h-16 w-full rtl:-scale-x-100" preserveAspectRatio="none">
+        <polygon points={`0,${H} ${xy.join(" ")} ${W},${H}`} fill="var(--accent)" opacity="0.12" />
+        <polyline points={xy.join(" ")} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div className="muted flex justify-between text-xs" dir="ltr" aria-hidden><span>{pts[0].period}</span><span>{pts[pts.length - 1].period}</span></div>
+    </div>
   );
 }
 
@@ -101,9 +105,9 @@ export function MarketPanel({ country, comps, showChoose = true, className = "" 
                   const when = c.saleDate ? date(new Date(c.saleDate + "T00:00:00"), { year: "numeric", month: "short", day: "numeric" }) : "—";
                   return (
                     <tr key={c.id} className="border-t" style={{ borderColor: "var(--border)" }}>
-                      <td className="py-1.5 pe-3"><bdi>{c.address || t("common.unnamedComp")}</bdi></td>
-                      <td className="pe-3">{when}</td>
-                      <td className="text-end" dir="ltr">{dr === null ? t("market.na") : signed(dr, (v) => num(n.pct1(v)))}</td>
+                      <td className="py-1.5 pe-3 [overflow-wrap:anywhere]"><bdi>{c.address || t("common.unnamedComp")}</bdi></td>
+                      <td className="whitespace-nowrap pe-3">{when}</td>
+                      <td className="whitespace-nowrap text-end" dir="ltr">{dr === null ? t("market.na") : signed(dr, (v) => num(n.pct1(v)))}</td>
                     </tr>
                   );
                 })}

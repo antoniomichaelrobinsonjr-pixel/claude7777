@@ -462,7 +462,7 @@ export default function ProjectPage() {
           )}
         </div>
 
-        <aside className={`print:order-first lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
+        <aside id="result" className={`scroll-mt-20 print:order-first lg:sticky lg:top-20 lg:self-start ${guided ? (step === 4 ? "order-first lg:order-none" : "hidden lg:block print:block") : ""}`}>
           <div className="card overflow-hidden">
             <div className="p-5" style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderBottom: "1px solid color-mix(in srgb, var(--gold-b) 60%, transparent)" }}>
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">{t("result.weighted")}</div>
@@ -493,6 +493,24 @@ export default function ProjectPage() {
           </div>
         </aside>
       </div>
+
+      {/* On a phone the answer sits below every comp; keep it in view and one tap away. */}
+      {!guided && analysis.count > 0 && (
+        <>
+          <div className="h-16 lg:hidden no-print" aria-hidden />
+          <a
+            href="#result"
+            className="no-print fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 px-4 py-3 lg:hidden"
+            style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderTop: "1px solid var(--gold-b)" }}
+          >
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold uppercase tracking-wider opacity-80">{t("result.weighted")}</span>
+              <span className="block truncate text-xs opacity-80">{t("result.compsUsed", { used: analysis.count, count: project.comps.length })}</span>
+            </span>
+            <span className="display gold-text whitespace-nowrap text-2xl font-bold" dir="ltr">{usd(analysis.weighted)}</span>
+          </a>
+        </>
+      )}
     </div>
   );
 }

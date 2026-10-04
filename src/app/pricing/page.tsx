@@ -138,7 +138,10 @@ export default function PricingPage() {
                 {plan.rank > 0 && <li className="muted pt-1 font-semibold">{t("pricing.everythingIn", { plan: t(`plan.${PLAN_IDS[plan.rank - 1]}.name`) })}</li>}
                 {plan.features.filter((f) => !PLANS[PLAN_IDS[plan.rank - 1] ?? "starter"].features.includes(f)).map((f) => <li key={f}>✓ {t(`feature.${f}`)}</li>)}
               </ul>
-              <div className="mt-auto">
+              <div className="mt-auto space-y-3">
+                {ent.billingEnabled && !current && !subscribed && id !== "starter" && price(id) !== null && (!ent.signedIn || trialEligible(id, ent.trialsUsed)) && (
+                  <p className="muted text-xs">{t("pricing.trialTerms", { price: t(`billing.price.${interval}`, { price: price(id)! }) })}</p>
+                )}
                 {current ? (
                   <button className="btn w-full justify-center" disabled>{t("pricing.cta.current")}</button>
                 ) : id === "starter" ? (
@@ -153,9 +156,6 @@ export default function PricingPage() {
                   <button className="btn btn-primary w-full justify-center" disabled={busy !== null} onClick={() => choose(id)}>
                     {busy === id ? t("pricing.cta.working") : trialEligible(id, ent.trialsUsed) ? t("pricing.cta.trial") : t("pricing.cta.choose", { plan: t(`plan.${id}.name`) })}
                   </button>
-                )}
-                {ent.billingEnabled && !current && !subscribed && id !== "starter" && price(id) !== null && (!ent.signedIn || trialEligible(id, ent.trialsUsed)) && (
-                  <p className="muted mt-2 text-xs">{t("pricing.trialTerms", { price: t(`billing.price.${interval}`, { price: price(id)! }) })}</p>
                 )}
               </div>
             </section>
