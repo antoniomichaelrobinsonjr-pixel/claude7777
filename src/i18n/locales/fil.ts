@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} comp ang hindi naidagdag dahil naabot na ang limitasyon ng iyong plano.",
   "voice.skipped.other": "{count} comp ang hindi naidagdag dahil naabot na ang limitasyon ng iyong plano.",
   "voice.limit.none": "Naabot na ang limitasyon ng comp ng iyong plano, kaya walang naidagdag.",
+  "notfound.title": "Hindi namin mahanap ang pahinang iyon",
+  "notfound.body": "Maaaring luma o mali ang pagkakasulat ng link. Bumalik sa iyong mga pagsusuri para magpatuloy.",
+  "error.title": "Nagkaproblema",
+  "error.body": "Walang nawala sa mga inilagay mo. Subukan muli, o bumalik sa iyong mga pagsusuri.",
+  "error.retry": "Subukan muli",
 };
 export default messages;

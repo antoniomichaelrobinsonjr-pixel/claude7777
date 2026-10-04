@@ -92,6 +92,25 @@ body {
   .step { display: inline-flex; height: 24px; width: 24px; align-items: center; justify-content: center; border-radius: 999px; background: var(--brand); color: var(--brand-ink); font-size: 12px; font-weight: 700; }
 }
 
+/* Touch devices: 16px fields stop iOS zooming on focus; 44px targets; no double-tap delay. */
+@media (pointer: coarse) {
+  .input, select, textarea, input { font-size: 16px; }
+  .input { min-height: 44px; }
+  .btn, .tap, button, [role=radio], [role=tab] { min-height: 44px; }
+  input.display { min-height: 44px; }
+  header a, header select, header button { min-height: 44px; display: inline-flex; align-items: center; }
+}
+a, button, select, input, textarea, summary, label { touch-action: manipulation; }
+html { -webkit-text-size-adjust: 100%; }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+main { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+[data-step-anchor] { scroll-margin-top: 88px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
 /* Shown only when someone without a paid plan prints: see PrintGuard. */
 .print-lock-notice { display: none; }
 

@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "No se agregó {count} comparable porque se alcanzó el límite de su plan.",
   "voice.skipped.other": "No se agregaron {count} comparables porque se alcanzó el límite de su plan.",
   "voice.limit.none": "Se alcanzó el límite de comparables de su plan, por lo que no se agregó nada.",
+  "notfound.title": "No pudimos encontrar esa página",
+  "notfound.body": "Puede que el enlace sea antiguo o tenga un error. Vuelve a tus análisis para continuar.",
+  "error.title": "Algo salió mal",
+  "error.body": "No se perdió nada de lo que introdujiste. Inténtalo de nuevo o vuelve a tus análisis.",
+  "error.retry": "Reintentar",
 };
 export default messages;

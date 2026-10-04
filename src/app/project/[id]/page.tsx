@@ -137,6 +137,16 @@ export default function ProjectPage() {
   const [locating, setLocating] = useState(false);
   const [guided, setGuided] = useState(false);
   const [step, setStep] = useState(1);
+  const stepNavRef = useRef<HTMLElement>(null);
+  const firstStep = useRef(true);
+  // Moving between guided steps brings the new step to the top, so nobody has to scroll to find it.
+  useEffect(() => {
+    if (firstStep.current) { firstStep.current = false; return; }
+    const el = stepNavRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, [step]);
   const [openComps, setOpenComps] = useState<Record<string, boolean>>({});
   const loaded = useRef(false);
 
@@ -320,7 +330,7 @@ export default function ProjectPage() {
       )}
 
       {guided && (
-        <nav className="no-print card flex items-center gap-1 p-2" aria-label={t("project.progress")}>
+        <nav ref={stepNavRef} data-step-anchor className="no-print card flex items-center gap-1 p-2" aria-label={t("project.progress")}>
           {STEP_KEYS.map((k, i) => (
             <button
               key={k}
@@ -564,10 +574,10 @@ export default function ProjectPage() {
       {/* On a phone the answer sits below every comp; keep it in view and one tap away. */}
       {!guided && analysis.count > 0 && (
         <>
-          <div className="h-16 lg:hidden no-print" aria-hidden />
+          <div className="h-20 lg:hidden no-print" aria-hidden />
           <a
             href="#result"
-            className="no-print fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 px-4 py-3 lg:hidden"
+            className="no-print safe-bottom fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 px-4 pt-3 pb-3 lg:hidden"
             style={{ background: "linear-gradient(135deg, var(--panel-a), var(--panel-b))", color: "var(--panel-ink)", borderTop: "1px solid var(--gold-b)" }}
           >
             <span className="min-w-0">

@@ -627,5 +627,10 @@ const messages: Dict = {
   "voice.skipped.few": "{count} srovnatelné prodeje nebyly přidány, protože byl dosažen limit vašeho plánu.",
   "voice.skipped.other": "{count} srovnatelných prodejů nebylo přidáno, protože byl dosažen limit vašeho plánu.",
   "voice.limit.none": "Limit srovnatelných prodejů vašeho plánu byl dosažen, proto nebylo nic přidáno.",
+  "notfound.title": "Tuto stránku se nepodařilo najít",
+  "notfound.body": "Odkaz může být starý nebo špatně napsaný. Pro pokračování se vraťte ke svým analýzám.",
+  "error.title": "Něco se pokazilo",
+  "error.body": "Nic z toho, co jste zadali, se neztratilo. Zkuste to znovu nebo se vraťte ke svým analýzám.",
+  "error.retry": "Zkusit znovu",
 };
 export default messages;

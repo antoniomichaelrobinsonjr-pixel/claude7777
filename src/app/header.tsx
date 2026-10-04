@@ -34,7 +34,7 @@ export default function Header() {
   const { t, locale, locales, setLocale } = useI18n();
   const ent = useEntitlements();
   return (
-    <header className="no-print sticky top-0 z-10 border-b backdrop-blur" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 80%, transparent)" }}>
+    <header className="no-print safe-top sticky top-0 z-10 border-b backdrop-blur" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 80%, transparent)" }}>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
         <a href="/" aria-label="CompPilot"><Logo /></a>
         <div className="flex min-w-0 items-center gap-2">

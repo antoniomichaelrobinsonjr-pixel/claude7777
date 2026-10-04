@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "Đã thêm {count} giao dịch so sánh bên dưới. Hãy kiểm tra và điền những phần còn thiếu.",
   "voice.skipped.other": "{count} giao dịch so sánh chưa được thêm vì đã đạt giới hạn của gói của bạn.",
   "voice.limit.none": "Đã đạt giới hạn giao dịch so sánh của gói của bạn, nên chưa thêm gì.",
+  "notfound.title": "Chúng tôi không tìm thấy trang đó",
+  "notfound.body": "Liên kết có thể đã cũ hoặc bị gõ sai. Hãy quay lại các phân tích của bạn để tiếp tục.",
+  "error.title": "Đã xảy ra lỗi",
+  "error.body": "Những gì bạn đã nhập vẫn được giữ nguyên. Hãy thử lại hoặc quay về các phân tích của bạn.",
+  "error.retry": "Thử lại",
 };
 export default messages;

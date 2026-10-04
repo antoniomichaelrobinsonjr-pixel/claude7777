@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "{count} pembanding ditambahkan di bawah. Periksa, dan lengkapi yang masih kosong.",
   "voice.skipped.other": "{count} pembanding tidak ditambahkan karena batas paket Anda tercapai.",
   "voice.limit.none": "Batas pembanding paket Anda tercapai, jadi tidak ada yang ditambahkan.",
+  "notfound.title": "Kami tidak dapat menemukan halaman itu",
+  "notfound.body": "Tautan mungkin sudah lama atau salah ketik. Kembali ke analisis Anda untuk melanjutkan.",
+  "error.title": "Terjadi kesalahan",
+  "error.body": "Data yang Anda masukkan tidak hilang. Coba lagi, atau kembali ke analisis Anda.",
+  "error.retry": "Coba lagi",
 };
 export default messages;

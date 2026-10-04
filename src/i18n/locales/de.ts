@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} Vergleichsobjekt wurde nicht hinzugefügt, weil das Limit Ihres Tarifs erreicht wurde.",
   "voice.skipped.other": "{count} Vergleichsobjekte wurden nicht hinzugefügt, weil das Limit Ihres Tarifs erreicht wurde.",
   "voice.limit.none": "Das Vergleichsobjekt-Limit Ihres Tarifs ist erreicht, daher wurde nichts hinzugefügt.",
+  "notfound.title": "Diese Seite wurde nicht gefunden",
+  "notfound.body": "Der Link ist möglicherweise veraltet oder falsch geschrieben. Gehen Sie zurück zu Ihren Analysen, um fortzufahren.",
+  "error.title": "Etwas ist schiefgelaufen",
+  "error.body": "Ihre Eingaben sind nicht verloren gegangen. Versuchen Sie es erneut oder gehen Sie zurück zu Ihren Analysen.",
+  "error.retry": "Erneut versuchen",
 };
 export default messages;

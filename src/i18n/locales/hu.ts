@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} összehasonlító adat nem lett hozzáadva, mert elérte a csomagja korlátját.",
   "voice.skipped.other": "{count} összehasonlító adat nem lett hozzáadva, mert elérte a csomagja korlátját.",
   "voice.limit.none": "Elérte a csomagja összehasonlító adatokra vonatkozó korlátját, ezért semmi sem lett hozzáadva.",
+  "notfound.title": "Nem találjuk ezt az oldalt",
+  "notfound.body": "A hivatkozás lehet, hogy régi vagy elgépelt. Térjen vissza az elemzéseihez a folytatáshoz.",
+  "error.title": "Hiba történt",
+  "error.body": "A megadott adatok nem vesztek el. Próbálja újra, vagy lépjen vissza az elemzéseihez.",
+  "error.retry": "Próbálja újra",
 };
 export default messages;

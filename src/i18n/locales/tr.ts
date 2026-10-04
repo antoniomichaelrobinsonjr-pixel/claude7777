@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.other": "Planınızın sınırına ulaşıldığı için {count} emsal eklenmedi.",
   "voice.skipped.one": "Planınızın sınırına ulaşıldığı için {count} emsal eklenmedi.",
   "voice.limit.none": "Planınızın emsal sınırına ulaşıldı, bu yüzden hiçbir şey eklenmedi.",
+  "notfound.title": "Bu sayfayı bulamadık",
+  "notfound.body": "Bağlantı eski veya yanlış yazılmış olabilir. Devam etmek için analizlerinize dönün.",
+  "error.title": "Bir şeyler ters gitti",
+  "error.body": "Girdiğiniz hiçbir şey kaybolmadı. Tekrar deneyin veya analizlerinize dönün.",
+  "error.retry": "Tekrar dene",
 };
 export default messages;

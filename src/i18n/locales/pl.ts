@@ -647,5 +647,10 @@ const messages: Dict = {
   "voice.skipped.many": "Nie dodano {count} transakcji, ponieważ osiągnięto limit Twojego planu.",
   "voice.skipped.other": "Nie dodano {count} transakcji, ponieważ osiągnięto limit Twojego planu.",
   "voice.limit.none": "Osiągnięto limit transakcji w Twoim planie, więc nic nie dodano.",
+  "notfound.title": "Nie możemy znaleźć tej strony",
+  "notfound.body": "Link może być nieaktualny lub wpisany z błędem. Wróć do swoich analiz, aby kontynuować.",
+  "error.title": "Coś poszło nie tak",
+  "error.body": "Nic z tego, co wprowadzono, nie zostało utracone. Spróbuj ponownie lub wróć do swoich analiz.",
+  "error.retry": "Spróbuj ponownie",
 };
 export default messages;

@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} comparável não foi adicionado porque o limite do seu plano foi atingido.",
   "voice.skipped.other": "{count} comparáveis não foram adicionados porque o limite do seu plano foi atingido.",
   "voice.limit.none": "O limite de comparáveis do seu plano foi atingido, então nada foi adicionado.",
+  "notfound.title": "Não encontramos essa página",
+  "notfound.body": "O link pode ser antigo ou ter sido digitado errado. Volte às suas análises para continuar.",
+  "error.title": "Algo deu errado",
+  "error.body": "Nada do que você digitou foi perdido. Tente novamente ou volte às suas análises.",
+  "error.retry": "Tentar novamente",
 };
 export default messages;

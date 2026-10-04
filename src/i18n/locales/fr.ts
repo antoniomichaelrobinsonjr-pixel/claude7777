@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} comparable n’a pas été ajouté, car la limite de votre formule a été atteinte.",
   "voice.skipped.other": "{count} comparables n’ont pas été ajoutés, car la limite de votre formule a été atteinte.",
   "voice.limit.none": "La limite de comparables de votre formule est atteinte, donc rien n’a été ajouté.",
+  "notfound.title": "Page introuvable",
+  "notfound.body": "Le lien est peut-être ancien ou mal saisi. Revenez à vos analyses pour continuer.",
+  "error.title": "Une erreur s’est produite",
+  "error.body": "Rien de ce que vous avez saisi n’a été perdu. Réessayez ou revenez à vos analyses.",
+  "error.retry": "Réessayer",
 };
 export default messages;

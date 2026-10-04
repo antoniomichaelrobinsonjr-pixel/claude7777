@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "{count} jualan setanding ditambah di bawah. Semak, dan isi apa-apa yang tertinggal.",
   "voice.skipped.other": "{count} jualan setanding tidak ditambah kerana had pelan anda telah dicapai.",
   "voice.limit.none": "Had jualan setanding pelan anda telah dicapai, jadi tiada apa yang ditambah.",
+  "notfound.title": "Kami tidak menemui halaman itu",
+  "notfound.body": "Pautan mungkin sudah lama atau tersalah taip. Kembali ke analisis anda untuk meneruskan.",
+  "error.title": "Sesuatu telah berlaku",
+  "error.body": "Tiada apa yang anda masukkan hilang. Cuba lagi, atau kembali ke analisis anda.",
+  "error.retry": "Cuba lagi",
 };
 export default messages;

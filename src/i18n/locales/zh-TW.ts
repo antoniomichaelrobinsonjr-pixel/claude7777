@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "已在下方新增 {count} 件比較標的。請檢查，並補上缺漏的內容。",
   "voice.skipped.other": "由於已達方案上限，有 {count} 件比較標的未新增。",
   "voice.limit.none": "已達方案的比較標的上限，因此未新增任何內容。",
+  "notfound.title": "找不到該頁面",
+  "notfound.body": "連結可能已過期或輸入有誤。請返回您的分析繼續操作。",
+  "error.title": "發生錯誤",
+  "error.body": "您輸入的內容均未遺失。請重試，或返回您的分析。",
+  "error.retry": "重試",
 };
 export default messages;

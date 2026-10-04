@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} jämförelseobjekt lades inte till eftersom gränsen för din plan nåddes.",
   "voice.skipped.other": "{count} jämförelseobjekt lades inte till eftersom gränsen för din plan nåddes.",
   "voice.limit.none": "Gränsen för jämförelseobjekt i din plan är nådd, så inget lades till.",
+  "notfound.title": "Vi hittade inte sidan",
+  "notfound.body": "Länken kan vara gammal eller felstavad. Gå tillbaka till dina analyser för att fortsätta.",
+  "error.title": "Något gick fel",
+  "error.body": "Inget av det du angav gick förlorat. Försök igen eller gå tillbaka till dina analyser.",
+  "error.retry": "Försök igen",
 };
 export default messages;

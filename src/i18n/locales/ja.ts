@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "事例を{count}件、下に追加しました。内容を確認し、不足している項目を入力してください。",
   "voice.skipped.other": "プランの上限に達したため、{count}件の事例は追加されませんでした。",
   "voice.limit.none": "プランの事例数の上限に達したため、何も追加されませんでした。",
+  "notfound.title": "ページが見つかりませんでした",
+  "notfound.body": "リンクが古いか、入力が間違っている可能性があります。分析一覧に戻って続けてください。",
+  "error.title": "問題が発生しました",
+  "error.body": "入力した内容は失われていません。もう一度お試しいただくか、分析一覧に戻ってください。",
+  "error.retry": "もう一度試す",
 };
 export default messages;

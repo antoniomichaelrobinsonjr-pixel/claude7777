@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "{count} referentie is niet toegevoegd omdat de limiet van uw abonnement is bereikt.",
   "voice.skipped.other": "{count} referenties zijn niet toegevoegd omdat de limiet van uw abonnement is bereikt.",
   "voice.limit.none": "De referentielimiet van uw abonnement is bereikt, dus er is niets toegevoegd.",
+  "notfound.title": "We kunnen die pagina niet vinden",
+  "notfound.body": "De link is mogelijk verouderd of verkeerd getypt. Ga terug naar uw analyses om verder te gaan.",
+  "error.title": "Er is iets misgegaan",
+  "error.body": "Er is niets van wat u hebt ingevoerd verloren gegaan. Probeer het opnieuw of ga terug naar uw analyses.",
+  "error.retry": "Opnieuw proberen",
 };
 export default messages;

@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "거래사례 {count}건을 아래에 추가했습니다. 내용을 확인하고 빠진 항목을 채우세요.",
   "voice.skipped.other": "요금제 한도에 도달하여 거래사례 {count}건이 추가되지 않았습니다.",
   "voice.limit.none": "요금제의 거래사례 한도에 도달하여 아무것도 추가되지 않았습니다.",
+  "notfound.title": "페이지를 찾을 수 없습니다",
+  "notfound.body": "링크가 오래되었거나 잘못 입력되었을 수 있습니다. 분석 목록으로 돌아가 계속하세요.",
+  "error.title": "문제가 발생했습니다",
+  "error.body": "입력한 내용은 사라지지 않았습니다. 다시 시도하거나 분석 목록으로 돌아가세요.",
+  "error.retry": "다시 시도",
 };
 export default messages;

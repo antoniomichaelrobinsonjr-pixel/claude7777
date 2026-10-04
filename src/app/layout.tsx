@@ -6,6 +6,7 @@ import { I18nProvider } from "@/i18n";
 import { EntitlementsProvider } from "@/billing/entitlements";
 import { PrintGuard } from "@/billing/print-guard";
 import Footer from "./footer";
+import ScrollKeeper from "./scroll-keeper";
 
 export const metadata: Metadata = {
   title: "CompPilot",
@@ -20,6 +21,7 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <RegisterSW />
+        <ScrollKeeper />
         <I18nProvider>
           <EntitlementsProvider>
             <div className="app-shell">

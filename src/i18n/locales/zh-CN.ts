@@ -587,5 +587,10 @@ const messages: Dict = {
   "voice.added.other": "已在下方添加 {count} 个案例。请检查，并补全缺失的内容。",
   "voice.skipped.other": "由于已达到您套餐的上限，有 {count} 个案例未添加。",
   "voice.limit.none": "已达到您套餐的案例上限，因此未添加任何内容。",
+  "notfound.title": "找不到该页面",
+  "notfound.body": "链接可能已过期或输入有误。请返回您的分析继续操作。",
+  "error.title": "出了点问题",
+  "error.body": "您输入的内容均未丢失。请重试，或返回您的分析。",
+  "error.retry": "重试",
 };
 export default messages;

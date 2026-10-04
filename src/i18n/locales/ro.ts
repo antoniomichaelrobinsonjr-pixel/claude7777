@@ -627,5 +627,10 @@ const messages: Dict = {
   "voice.skipped.few": "{count} comparabile nu au fost adăugate deoarece s-a atins limita planului dvs.",
   "voice.skipped.other": "{count} de comparabile nu au fost adăugate deoarece s-a atins limita planului dvs.",
   "voice.limit.none": "Limita de comparabile a planului dvs. a fost atinsă, așa că nu s-a adăugat nimic.",
+  "notfound.title": "Nu am găsit pagina respectivă",
+  "notfound.body": "Linkul poate fi vechi sau scris greșit. Reveniți la analizele dvs. pentru a continua.",
+  "error.title": "Ceva nu a funcționat",
+  "error.body": "Nu s-a pierdut nimic din ce ați introdus. Încercați din nou sau reveniți la analizele dvs.",
+  "error.retry": "Încercați din nou",
 };
 export default messages;

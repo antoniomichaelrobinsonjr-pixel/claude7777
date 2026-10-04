@@ -607,5 +607,10 @@ const messages: Dict = {
   "voice.skipped.one": "Mauzo linganifu ambayo hayakuongezwa kwa sababu kikomo cha mpango wako kimefikiwa: {count}.",
   "voice.skipped.other": "Mauzo linganifu ambayo hayakuongezwa kwa sababu kikomo cha mpango wako kimefikiwa: {count}.",
   "voice.limit.none": "Kikomo cha mauzo linganifu cha mpango wako kimefikiwa, kwa hivyo hakuna kilichoongezwa.",
+  "notfound.title": "Hatukuweza kupata ukurasa huo",
+  "notfound.body": "Kiungo kinaweza kuwa cha zamani au kimeandikwa vibaya. Rudi kwenye uchambuzi wako ili kuendelea.",
+  "error.title": "Hitilafu imetokea",
+  "error.body": "Hakuna ulichoingiza kilichopotea. Jaribu tena, au rudi kwenye uchambuzi wako.",
+  "error.retry": "Jaribu tena",
 };
 export default messages;
