@@ -52,8 +52,9 @@ export default function Home() {
       </section>
 
       {!supabase && (
-        <p className="card px-4 py-3 text-sm" style={{ color: "var(--warn)" }}>
-          {rich("home.localMode", {}, { c: (x, i) => <code key={i} dir="ltr">{x}</code> })}
+        <p className="card muted px-4 py-3 text-sm" style={process.env.NODE_ENV === "production" ? undefined : { color: "var(--warn)" }}>
+          {/* People get a plain sentence; the setup hint about keys is for developers running the app locally. */}
+          {process.env.NODE_ENV === "production" ? t("home.localOnly") : rich("home.localMode", {}, { c: (x, i) => <code key={i} dir="ltr">{x}</code> })}
         </p>
       )}
       {error && <p style={{ color: "var(--danger)" }}>{error}</p>}

@@ -5,7 +5,7 @@ import { n } from "@/i18n/format";
 import { supabase } from "@/lib/supabase";
 import { useEntitlements } from "@/billing/entitlements";
 import { UpgradeNotice } from "@/billing/ui";
-import { countryName } from "./countries";
+import { countryName, countryOptions } from "./countries";
 import { driftSince, latestPoint, yearOnYear, type IndexPoint } from "./series";
 
 export type MarketState =
@@ -65,7 +65,7 @@ function Sparkline({ series, label }: { series: IndexPoint[]; label: string }) {
  * Daily-refreshed market context for the property's country, and how far the market has moved since each comp sold.
  * It is context only: it never changes the analysis value.
  */
-export function MarketPanel({ country, comps, showChoose = true, className = "" }: { country: string | undefined; comps: MarketComp[]; showChoose?: boolean; className?: string }) {
+export function MarketPanel({ country, comps, showChoose = true, className = "", onChooseCountry }: { country: string | undefined; comps: MarketComp[]; showChoose?: boolean; className?: string; onChooseCountry?: (country: string | undefined) => void }) {
   const { t, num, date, info } = useI18n();
   const ent = useEntitlements();
   const allowed = ent.can("marketUpdates");
@@ -73,7 +73,21 @@ export function MarketPanel({ country, comps, showChoose = true, className = "" 
   const name = country ? countryName(country, info.intl) : "";
 
   if (!allowed) return <div className={className}><UpgradeNotice feature="marketUpdates" /></div>;
-  if (!country) return showChoose ? <section className={`card p-5 ${className}`}><h2 className="font-semibold">{t("market.title")}</h2><p className="muted mt-1 text-sm">{t("market.chooseCountry")}</p></section> : null;
+  if (!country)
+    return showChoose ? (
+      <section className={`card space-y-3 p-5 ${className}`}>
+        <h2 className="font-semibold">{t("market.title")}</h2>
+        <p className="muted text-sm">{t("market.chooseCountry")}</p>
+        {onChooseCountry && (
+          <label className="field max-w-xs">{t("field.country")}
+            <select className="input" value="" onChange={(e) => onChooseCountry(e.target.value || undefined)}>
+              <option value="">{t("field.countryNone")}</option>
+              {countryOptions(info.intl).map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+            </select>
+          </label>
+        )}
+      </section>
+    ) : null;
 
   let body: React.ReactNode;
   if (!state || state.kind === "loading") body = <p className="muted text-sm" role="status">{t("market.loading")}</p>;

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, isLand, type Project } from "@/lib/comps";
+import { analyze, isEstate, isLand, isUnit, type Project } from "@/lib/comps";
 import { buildReport, type Grade } from "@/lib/report";
 import { useI18n } from "@/i18n";
 import { n } from "@/i18n/format";
@@ -76,6 +76,8 @@ export default function ReportPage() {
     );
   }
   const land = isLand(project.subject);
+  const unit = isUnit(project.subject);
+  const estate = isEstate(project.subject);
   const lk = (key: string) => (land ? `land.${key}` : key);
   const showGrade = ent.can("reportGrade");
   const whiteLabel = ent.can("whiteLabel") && (brand.name.trim() !== "" || brand.logo !== null);
@@ -96,13 +98,14 @@ export default function ReportPage() {
   function downloadCsv() {
     const rows: (string | number)[][] = [[
       t("field.address"), t("comp.salePrice"), t("comp.saleDate"), t(lk("field.sqft")), ...(land ? [] : [t("field.beds"), t("field.baths"), t("field.yearBuilt")]),
+      ...(unit ? [t("field.floor"), t("field.parking"), t("field.monthlyFee")] : estate ? [t("field.lotAcres")] : []),
       t("comp.distance"), t("comp.otherAdj"), t("comp.source"), t("comp.netAdj"), t("comp.adjustedPrice"), t("col.weight"),
     ]];
     const wsum = analysis!.rows.reduce((s, r) => s + r.weight, 0) || 1;
     const dist = new Map(report!.comps.map((c) => [c.id, c.distanceMi]));
     for (const r of analysis!.rows) {
       const c = r.comp;
-      rows.push([c.address, c.salePrice, c.saleDate, c.sqft, ...(land ? [] : [c.beds, c.baths, c.yearBuilt]), dist.get(c.id) ?? "", c.otherAdj, c.source ?? "", Math.round(r.netAdj), Math.round(r.adjustedPrice), Math.round((r.weight / wsum) * 1000) / 10]);
+      rows.push([c.address, c.salePrice, c.saleDate, c.sqft, ...(land ? [] : [c.beds, c.baths, c.yearBuilt]), ...(unit ? [c.floor ?? "", c.parking ?? "", c.monthlyFee ?? ""] : estate ? [c.acres ?? ""] : []), dist.get(c.id) ?? "", c.otherAdj, c.source ?? "", Math.round(r.netAdj), Math.round(r.adjustedPrice), Math.round((r.weight / wsum) * 1000) / 10]);
     }
     const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -262,7 +265,7 @@ export default function ReportPage() {
                     <div className="h-full rounded-full" style={{ width: `${f.score ?? 0}%`, background: "linear-gradient(90deg, var(--gold-a), var(--gold-b))" }} />
                   </div>
                   <div className="mt-1 text-sm">{tm(f.value)}</div>
-                  <div className="muted text-xs">{t(`factor.${f.key}.rule`)}</div>
+                  <div className="muted text-xs">{f.key === "recency" ? tm(report.rules.recency) : f.key === "proximity" ? tm(report.rules.proximity) : t(`factor.${f.key}.rule`)}</div>
                 </li>
               ))}
             </ul>
@@ -365,7 +368,9 @@ export default function ReportPage() {
                 <thead className="muted text-xs uppercase">
                   <tr>
                     <th className="py-2 pe-3 text-start">{t("col.property")}</th><th className="pe-3 text-end">{t("col.size")}</th>{!land && <th className="pe-3 text-end">{t("col.beds")}</th>}
-                    {!land && <th className="pe-3 text-end">{t("col.baths")}</th>}{!land && <th className="pe-3 text-end">{t("col.age")}</th>}<th className="pe-3 text-end">{t("col.extra")}</th><th className="text-end">{t("col.net")}</th>
+                    {!land && <th className="pe-3 text-end">{t("col.baths")}</th>}{!land && <th className="pe-3 text-end">{t("col.age")}</th>}
+                    {unit && <><th className="pe-3 text-end">{t("col.floor")}</th><th className="pe-3 text-end">{t("col.parking")}</th><th className="pe-3 text-end">{t("col.fee")}</th></>}
+                    {estate && <th className="pe-3 text-end">{t("col.lot")}</th>}<th className="pe-3 text-end">{t("col.extra")}</th><th className="text-end">{t("col.net")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -374,6 +379,8 @@ export default function ReportPage() {
                       <td className="py-2 pe-3"><bdi>{nameOf(r.comp.address)}</bdi></td>
                       <td className="pe-3 text-end" dir="ltr">{signed(r.sqftAdj)}</td>{!land && <td className="pe-3 text-end" dir="ltr">{signed(r.bedAdj)}</td>}
                       {!land && <td className="pe-3 text-end" dir="ltr">{signed(r.bathAdj)}</td>}{!land && <td className="pe-3 text-end" dir="ltr">{signed(r.ageAdj)}</td>}
+                      {unit && <><td className="pe-3 text-end" dir="ltr">{signed(r.floorAdj)}</td><td className="pe-3 text-end" dir="ltr">{signed(r.parkingAdj)}</td><td className="pe-3 text-end" dir="ltr">{signed(r.feeAdj)}</td></>}
+                      {estate && <td className="pe-3 text-end" dir="ltr">{signed(r.acreAdj)}</td>}
                       <td className="pe-3 text-end" dir="ltr">{signed(r.comp.otherAdj)}</td><td className="text-end font-semibold" dir="ltr">{signed(r.netAdj)}</td>
                     </tr>
                   ))}
@@ -381,8 +388,12 @@ export default function ReportPage() {
               </table>
             </div>
             <p className="mt-4 text-sm">
-              {rich(lk("method.rates"), { sqft: usd(project.rates.perSqft), bed: usd(project.rates.perBed), bath: usd(project.rates.perBath), year: usd(project.rates.perYear) }, bold)}
-            </p>
+              {unit
+                ? rich("method.rates.unit", { sqft: usd(project.rates.perSqft), bed: usd(project.rates.perBed), bath: usd(project.rates.perBath), year: usd(project.rates.perYear), floor: usd(project.rates.perFloor ?? 0), parking: usd(project.rates.perParking ?? 0), fee: usd(project.rates.perFee ?? 0) }, bold)
+                : estate
+                ? rich("method.rates.estate", { sqft: usd(project.rates.perSqft), acre: usd(project.rates.perAcre ?? 0), bed: usd(project.rates.perBed), bath: usd(project.rates.perBath), year: usd(project.rates.perYear) }, bold)
+                : rich(lk("method.rates"), { sqft: usd(project.rates.perSqft), bed: usd(project.rates.perBed), bath: usd(project.rates.perBath), year: usd(project.rates.perYear) }, bold)}</p>
+            {(unit || estate) && <p className="mt-1 text-sm">{t(unit ? "method.extra.unit" : "method.extra.estate")}</p>}
             <p className="mt-1 text-sm">
               <strong>{t("method.basisLabel")}</strong>{" "}
               {project.ratesBasis?.trim() || <span style={{ color: "var(--warn)" }}>{t("method.notRecorded")}</span>}

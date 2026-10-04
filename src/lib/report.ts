@@ -1,6 +1,10 @@
-import { analyze, defaultRatesFor, isLand, type GeoPoint, type Project } from "./comps.ts";
+import { analyze, defaultRatesFor, isEstate, isLand, isUnit, type GeoPoint, type Project } from "./comps.ts";
+import { isHomeProfile, profileFor } from "./profile.ts";
 import { haversineMiles, validGeo } from "./geo.ts";
 import { msg, n as num, type Msg } from "../i18n/format.ts";
+
+/** Miles as a number the reader sees exactly: 2, 0.5 or 0.25, never 0.25 rounded to 0.3. */
+const miles = (x: number) => (Number.isInteger(x) ? num.int(x) : Number.isInteger(x * 10) ? num.dec1(x) : num.dec2(x));
 
 /** Linear score: 100 when value <= full, 0 when value >= zero. */
 const lin = (value: number, full: number, zero: number) =>
@@ -82,6 +86,8 @@ export interface Report {
   caps: Msg[];
   /** Plain statements about what the estimate does and does not rest on. */
   limitations: Msg[];
+  /** The reliability thresholds used for this kind of property, and the messages that state them. */
+  rules: { recency: Msg; proximity: Msg };
   usingDefaultRates: boolean;
   spreadPct: number;
   cvPct: number | null;
@@ -144,6 +150,8 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   const a = analyze(project);
   const { subject, rates } = project;
   const landPrefix = isLand(subject) ? "land." : "";
+  const prof = profileFor(subject.kind);
+  const homeLike = isHomeProfile(prof);
   const med = a.count ? median(a.rows.map((r) => r.adjustedPrice)) : 0;
 
   const subjectGeo = validGeo(subject.geo, subject.address);
@@ -156,12 +164,12 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
     const flags: Msg[] = [];
     if (ageDays === null) flags.push(msg("flag.noDate"));
     else if (ageDays < 0) flags.push(msg("flag.future"));
-    else if (ageDays > 180) flags.push(msg("flag.old"));
+    else if (ageDays > prof.oldDays) flags.push(homeLike ? msg("flag.old") : msg("flag.oldMonths", { months: num.int(Math.round(prof.oldDays / 30.4375)) }));
     const entered = c.distanceMi > 0 ? c.distanceMi : null;
     // A straight line is the shortest possible route, so when the map gives a distance the larger of the two is used.
     const distance = mapDistanceMi !== null ? Math.max(entered ?? 0, mapDistanceMi) : entered;
     if (distance === null) flags.push(msg("flag.noDist"));
-    else if (distance > 1) flags.push(msg("flag.far"));
+    else if (distance > prof.farMi) flags.push(homeLike ? msg("flag.far") : msg("flag.farMiles", { miles: miles(prof.farMi) }));
     if (mapDistanceMi !== null && entered !== null && !c.distanceComputed && mapDistanceMi - entered > 0.25)
       flags.push(msg("flag.shorter", { entered: num.dec1(entered), map: num.dec1(mapDistanceMi) }));
     if (geo && !geo.precise) flags.push(msg("flag.areaOnly"));
@@ -212,12 +220,12 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
     },
     {
       key: "recency", weight: 1, weightPct: 20,
-      score: ages.length ? lin(median(ages), 90, 365) : null,
+      score: ages.length ? lin(median(ages), prof.recencyFull, prof.recencyZero) : null,
       value: ages.length ? msg("factor.recency.value", { days: num.int(median(ages)), dated: ages.length, total: n }) : msg("factor.recency.none"),
     },
     {
       key: "proximity", weight: 1, weightPct: 20,
-      score: dists.length ? lin(mean(dists), 0.5, 3) : null,
+      score: dists.length ? lin(mean(dists), prof.proxFull, prof.proxZero) : null,
       value: dists.length
         ? msg(distanceBasis === "map" ? "factor.proximity.valueMap" : "factor.proximity.valueEntered", { miles: num.dec1(mean(dists)), k: dists.length, total: n })
         : msg("factor.proximity.none"),
@@ -272,6 +280,10 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   if (trend.slopePctPerMonth !== null && Math.abs(trend.slopePctPerMonth) >= 0.5 && (trend.r2 ?? 0) >= 0.5)
     limitations.push(msg(`${landPrefix}${trend.slopePctPerMonth > 0 ? "lim.trendRising" : "lim.trendFalling"}`, { pct: num.dec1(Math.abs(trend.slopePctPerMonth)) }));
   if (customWeights) limitations.push(msg("lim.customWeights", { score: equalWeightScore, grade: gradeFor(equalWeightScore) }));
+  // What a spreadsheet of comps can't see depends on what is being priced.
+  if (isUnit(subject)) limitations.push(msg("lim.unit"));
+  else if (isEstate(subject)) limitations.push(msg("lim.estate"));
+  else if (isLand(subject)) limitations.push(msg("lim.land"));
   limitations.push(msg("lim.timing"));
   limitations.push(msg("lim.notAppraisal"));
 
@@ -280,6 +292,10 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
     subjectGeo, mapped, distanceBasis,
     customWeights, equalWeightScore, equalWeightGrade: gradeFor(equalWeightScore),
     trend,
+    rules: {
+      recency: homeLike ? msg("factor.recency.rule") : msg("factor.recency.ruleDays", { full: num.int(prof.recencyFull), zero: num.int(prof.recencyZero) }),
+      proximity: homeLike ? msg("factor.proximity.rule") : msg("factor.proximity.ruleMiles", { full: miles(prof.proxFull), zero: miles(prof.proxZero) }),
+    },
     count: n, comps, factors, score, grade: gradeFor(score), caps, limitations,
     usingDefaultRates, spreadPct, cvPct,
   };

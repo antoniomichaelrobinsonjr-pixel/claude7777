@@ -10,8 +10,15 @@ export interface GeoPoint {
   precise: boolean;
 }
 
-/** What is being priced. A home is sized in square feet; land is sized in acres and has no beds, baths or age. */
-export type PropertyKind = "home" | "land";
+/**
+ * What is being priced.
+ * - home: a house, sized in square feet.
+ * - apartment / condo: a unit in a building. Floor, parking and the monthly building or association fee also move the price.
+ * - estate: a luxury estate. Living area in square feet plus the grounds in acres; few comparable sales, so wider search.
+ * - land: sized in acres, with no beds, baths or age.
+ */
+export type PropertyKind = "home" | "apartment" | "condo" | "estate" | "land";
+export const PROPERTY_KINDS: PropertyKind[] = ["home", "apartment", "condo", "estate", "land"];
 
 export interface Subject {
   address: string;
@@ -22,6 +29,14 @@ export interface Subject {
   beds: number;
   baths: number;
   yearBuilt: number;
+  /** Apartments and condos: the floor the unit is on. */
+  floor?: number;
+  /** Apartments and condos: parking spaces that come with the unit. */
+  parking?: number;
+  /** Apartments and condos: the monthly building or association fee, in dollars. */
+  monthlyFee?: number;
+  /** Estates: the grounds, in acres. */
+  acres?: number;
   geo?: GeoPoint;
   /** ISO 3166-1 country code, used to show that country's market data. */
   country?: string;
@@ -36,6 +51,10 @@ export interface Comp {
   beds: number;
   baths: number;
   yearBuilt: number;
+  floor?: number;
+  parking?: number;
+  monthlyFee?: number;
+  acres?: number;
   distanceMi: number;
   /** Manual dollar adjustment for condition, lot, upgrades, etc. */
   otherAdj: number;
@@ -53,6 +72,14 @@ export interface Rates {
   perBed: number;
   perBath: number;
   perYear: number;
+  /** Apartments and condos: dollars per floor higher. */
+  perFloor?: number;
+  /** Apartments and condos: dollars per parking space. */
+  perParking?: number;
+  /** Apartments and condos: dollars of value lost per $1 of extra monthly fee. */
+  perFee?: number;
+  /** Estates: dollars per acre of grounds. */
+  perAcre?: number;
 }
 
 export interface Project {
@@ -81,9 +108,16 @@ export interface Project {
 export const DEFAULT_RATES: Rates = { perSqft: 60, perBed: 5000, perBath: 7500, perYear: 500 };
 /** Placeholder rates for land: only the size rate (dollars per acre) is used. */
 export const DEFAULT_LAND_RATES: Rates = { perSqft: 8000, perBed: 0, perBath: 0, perYear: 0 };
+/** Placeholder rates for apartments and condos. Replace them with your market's. */
+export const DEFAULT_UNIT_RATES: Rates = { perSqft: 120, perBed: 8000, perBath: 9000, perYear: 400, perFloor: 1500, perParking: 20000, perFee: 100 };
+/** Placeholder rates for luxury estates. Replace them with your market's. */
+export const DEFAULT_ESTATE_RATES: Rates = { perSqft: 250, perBed: 25000, perBath: 35000, perYear: 1500, perAcre: 40000 };
 
 export const isLand = (s: { kind?: PropertyKind }) => s.kind === "land";
-export const defaultRatesFor = (s: { kind?: PropertyKind }): Rates => ({ ...(isLand(s) ? DEFAULT_LAND_RATES : DEFAULT_RATES) });
+export const isUnit = (s: { kind?: PropertyKind }) => s.kind === "apartment" || s.kind === "condo";
+export const isEstate = (s: { kind?: PropertyKind }) => s.kind === "estate";
+export const defaultRatesFor = (s: { kind?: PropertyKind }): Rates =>
+  ({ ...(isLand(s) ? DEFAULT_LAND_RATES : isUnit(s) ? DEFAULT_UNIT_RATES : isEstate(s) ? DEFAULT_ESTATE_RATES : DEFAULT_RATES) });
 
 export interface AdjustedComp {
   comp: Comp;
@@ -91,12 +125,22 @@ export interface AdjustedComp {
   bedAdj: number;
   bathAdj: number;
   ageAdj: number;
+  /** Apartments and condos: floor, parking and monthly fee. Estates: lot size. Zero when not applicable or not entered. */
+  floorAdj: number;
+  parkingAdj: number;
+  feeAdj: number;
+  acreAdj: number;
   netAdj: number;
   grossAdjPct: number;
   adjustedPrice: number;
   pricePerSqft: number;
   weight: number;
 }
+
+const entered = (x: number | undefined): x is number => typeof x === "number" && Number.isFinite(x);
+/** (subject − comp) × rate, but only when both sides were actually entered, so a blank never invents an adjustment. */
+const diff = (subject: number | undefined, comp: number | undefined, rate: number | undefined) =>
+  entered(subject) && entered(comp) && entered(rate) ? (subject - comp) * rate : 0;
 
 /** Adjustments move the comp toward the subject: subject better => positive. */
 export function adjustComp(subject: Subject, comp: Comp, rates: Rates): AdjustedComp {
@@ -106,9 +150,16 @@ export function adjustComp(subject: Subject, comp: Comp, rates: Rates): Adjusted
   const bedAdj = land ? 0 : (subject.beds - comp.beds) * rates.perBed;
   const bathAdj = land ? 0 : (subject.baths - comp.baths) * rates.perBath;
   const ageAdj = land ? 0 : (subject.yearBuilt - comp.yearBuilt) * rates.perYear;
-  const netAdj = sqftAdj + bedAdj + bathAdj + ageAdj + comp.otherAdj;
+  const unit = isUnit(subject);
+  const floorAdj = unit ? diff(subject.floor, comp.floor, rates.perFloor) : 0;
+  const parkingAdj = unit ? diff(subject.parking, comp.parking, rates.perParking) : 0;
+  // A higher monthly fee makes a unit worth less, so the sign is the other way round.
+  const feeAdj = unit ? diff(comp.monthlyFee, subject.monthlyFee, rates.perFee) : 0;
+  const acreAdj = isEstate(subject) ? diff(subject.acres, comp.acres, rates.perAcre) : 0;
+  const netAdj = sqftAdj + bedAdj + bathAdj + ageAdj + floorAdj + parkingAdj + feeAdj + acreAdj + comp.otherAdj;
   const gross =
-    Math.abs(sqftAdj) + Math.abs(bedAdj) + Math.abs(bathAdj) + Math.abs(ageAdj) + Math.abs(comp.otherAdj);
+    Math.abs(sqftAdj) + Math.abs(bedAdj) + Math.abs(bathAdj) + Math.abs(ageAdj) + Math.abs(floorAdj) + Math.abs(parkingAdj) +
+    Math.abs(feeAdj) + Math.abs(acreAdj) + Math.abs(comp.otherAdj);
   const grossAdjPct = comp.salePrice > 0 ? (gross / comp.salePrice) * 100 : 0;
   const adjustedPrice = comp.salePrice + netAdj;
   // Comps needing fewer adjustments count more.
@@ -119,6 +170,10 @@ export function adjustComp(subject: Subject, comp: Comp, rates: Rates): Adjusted
     bedAdj,
     bathAdj,
     ageAdj,
+    floorAdj,
+    parkingAdj,
+    feeAdj,
+    acreAdj,
     netAdj,
     grossAdjPct,
     adjustedPrice,

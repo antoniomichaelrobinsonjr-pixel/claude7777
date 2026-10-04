@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, isLand, type Project } from "@/lib/comps";
+import { analyze, isEstate, isLand, isUnit, type Project } from "@/lib/comps";
 import { buildReport } from "@/lib/report";
 import { buyerView, closestComps, DEFAULT_GROWTH, marketPath, ownerSummary, projection, sellerView, trailingCagr, type Position } from "@/lib/audience";
 import { useI18n } from "@/i18n";
@@ -215,7 +215,7 @@ export default function AudienceReportPage() {
         )}
         <Section title={t("buyer.what.title")}>
           <ul className="list-disc space-y-1.5 ps-5 text-sm">
-            {[1, 2, 3, 4, 5].map((i) => <li key={i}>{t(`${land ? "land." : ""}buyer.what.${i}`)}</li>)}
+            {[1, 2, 3, 4, 5].map((i) => <li key={i}>{t(`${land ? "land." : isUnit(project.subject) ? "unit." : isEstate(project.subject) ? "estate." : ""}buyer.what.${i}`)}</li>)}
           </ul>
         </Section>
         <MarketPanel country={country} showChoose={false} comps={analysis.rows.map((r) => ({ id: r.comp.id, address: r.comp.address, saleDate: r.comp.saleDate }))} />

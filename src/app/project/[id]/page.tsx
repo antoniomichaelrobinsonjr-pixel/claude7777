@@ -10,7 +10,23 @@ import { countryOptions } from "@/market/countries";
 import { MarketPanel } from "@/market/panel";
 import { readMoney, showMoney, type Vars } from "@/i18n/format";
 import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
-import { analyze, defaultRatesFor, exampleData, isLand, newComp, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
+import { analyze, defaultRatesFor, exampleData, isEstate, isLand, isUnit, newComp, PROPERTY_KINDS, type Analysis, type Comp, type GeoPoint, type Project, type PropertyKind, type Rates, type Subject } from "@/lib/comps";
+
+/** A number box where blank means "not entered" (undefined), so an empty field never creates an adjustment. */
+function OptNum({ label, value, onChange, step }: { label: string; value: number | undefined; onChange: (n: number | undefined) => void; step?: number }) {
+  const { t } = useI18n();
+  return (
+    <label className="field">
+      {label}
+      <input
+        className="input" type="number" inputMode="decimal" step={step} min={0} placeholder={t("common.optional")}
+        value={typeof value === "number" && Number.isFinite(value) ? value : ""}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => { const v = parseFloat(e.target.value); onChange(Number.isFinite(v) ? Math.max(0, v) : undefined); }}
+      />
+    </label>
+  );
+}
 
 function Num({ label, value, onChange, step }: { label: string; value: number; onChange: (n: number) => void; step?: number }) {
   return (
@@ -119,6 +135,7 @@ export default function ProjectPage() {
   const [locating, setLocating] = useState(false);
   const [guided, setGuided] = useState(false);
   const [step, setStep] = useState(1);
+  const [openComps, setOpenComps] = useState<Record<string, boolean>>({});
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -160,10 +177,16 @@ export default function ProjectPage() {
   const lockedCount = ent.lockedComps(project);
   const atCompLimit = !ent.canAddComp(project.comps.length);
   const isBlank = isBlankProject(project);
+  const kind: PropertyKind = project.subject.kind ?? "home";
   const land = isLand(project.subject);
-  /** The wording for a land analysis where it differs (acres instead of square feet, no beds or baths). */
-  const lk = (key: string) => (land ? `land.${key}` : key);
-  function changeKind(kind: "home" | "land") {
+  const unit = isUnit(project.subject);
+  const estate = isEstate(project.subject);
+  /** The wording where it differs by property type (acres for land, living area for an estate). */
+  const lk = (key: string) => (land ? `land.${key}` : estate && key === "field.sqft" ? "estate.field.sqft" : key);
+  /** Which comps are open for editing. Short lists stay open; in a long list a finished comp folds to one line. */
+  const complete = (c: Comp) => c.address.trim() !== "" && c.salePrice > 0 && c.sqft > 0;
+  const isOpen = (c: Comp) => openComps[c.id] ?? (project!.comps.length <= 4 || !complete(c));
+  function changeKind(kind: PropertyKind) {
     const wasDefault = (Object.keys(project!.rates) as (keyof Rates)[]).every((k) => project!.rates[k] === defaultRatesFor(project!.subject)[k]);
     const subject = { ...project!.subject, kind };
     set({ subject, ...(wasDefault ? { rates: defaultRatesFor(subject) } : {}) });
@@ -283,8 +306,8 @@ export default function ProjectPage() {
           <GatedButton allowed={ent.can("addressLookup")} feature="addressLookup" onClick={locateAll} disabled={locating} title={t("project.locateTitle")}>
             {locating ? t("project.locating") : t("project.locate")}
           </GatedButton>
-          <GatedButton allowed={ent.can("report")} feature="report" href={`/project/${project.id}/report`}>{t("project.investorReport")}</GatedButton>
-          <GatedButton allowed={ent.can("printSummary")} feature="printSummary" onClick={() => window.print()}>{t("common.print")}</GatedButton>
+          {(!guided || step === 4) && <GatedButton allowed={ent.can("report")} feature="report" href={`/project/${project.id}/report`}>{t("project.investorReport")}</GatedButton>}
+          {(!guided || step === 4) && <GatedButton allowed={ent.can("printSummary")} feature="printSummary" onClick={() => window.print()}>{t("common.print")}</GatedButton>}
         </div>
       </div>
 
@@ -314,8 +337,16 @@ export default function ProjectPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-6">
           <section className={`card p-5 ${show(1)}`}>
-            <Step n={1} title={t("step1.title")} hint={t("step1.hint")} />
+            <Step n={1} title={t("step1.title")} hint={t("step1.hintAny")} />
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="col-span-2 md:col-span-4">
+                <label className="field">{t("field.propertyType")}
+                  <select className="input" value={kind} onChange={(e) => changeKind(e.target.value as PropertyKind)}>
+                    {PROPERTY_KINDS.map((k) => <option key={k} value={k}>{t(`type.${k}`)}</option>)}
+                  </select>
+                </label>
+                <p className="muted mt-1 text-sm">{t(`type.hint.${kind}`)}</p>
+              </div>
               <label className="field col-span-2 md:col-span-4">{t("field.address")}
                 <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
                 {(() => { const g = validGeo(project.subject.geo, project.subject.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
@@ -326,16 +357,14 @@ export default function ProjectPage() {
                   {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
                 </select>
               </label>
-              <label className="field col-span-2 md:col-span-2">{t("field.propertyType")}
-                <select className="input" value={land ? "land" : "home"} onChange={(e) => changeKind(e.target.value === "land" ? "land" : "home")}>
-                  <option value="home">{t("type.home")}</option>
-                  <option value="land">{t("type.land")}</option>
-                </select>
-              </label>
               <Num label={t(lk("field.sqft"))} step={land ? 0.01 : 1} value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
               {!land && <Num label={t("field.beds")} value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />}
               {!land && <Num label={t("field.baths")} step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} />}
               {!land && <Num label={t("field.yearBuilt")} value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} />}
+              {unit && <OptNum label={t("field.floor")} value={project.subject.floor} onChange={(n) => setSubject({ floor: n })} />}
+              {unit && <OptNum label={t("field.parking")} value={project.subject.parking} onChange={(n) => setSubject({ parking: n })} />}
+              {unit && <OptNum label={t("field.monthlyFee")} value={project.subject.monthlyFee} onChange={(n) => setSubject({ monthlyFee: n })} />}
+              {estate && <OptNum label={t("field.lotAcres")} step={0.01} value={project.subject.acres} onChange={(n) => setSubject({ acres: n })} />}
             </div>
           </section>
 
@@ -346,6 +375,10 @@ export default function ProjectPage() {
               {!land && <Money label={t("rate.bed")} value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} />}
               {!land && <Money label={t("rate.bath")} value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} />}
               {!land && <Money label={t("rate.year")} value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />}
+              {unit && <Money label={t("rate.floor")} value={project.rates.perFloor ?? 0} onChange={(n) => setRates({ perFloor: n })} />}
+              {unit && <Money label={t("rate.parking")} value={project.rates.perParking ?? 0} onChange={(n) => setRates({ perParking: n })} />}
+              {unit && <Money label={t("rate.fee")} value={project.rates.perFee ?? 0} onChange={(n) => setRates({ perFee: n })} />}
+              {estate && <Money label={t("rate.lotAcre")} value={project.rates.perAcre ?? 0} onChange={(n) => setRates({ perAcre: n })} />}
             </div>
             <label className="field mt-3 block">{t("ratesBasis.label")} <span className="font-normal">{t("ratesBasis.hint")}</span>
               <input className="input" dir="auto" placeholder={t("ratesBasis.placeholder")} value={project.ratesBasis ?? ""} onChange={(e) => set({ ratesBasis: e.target.value })} />
@@ -401,14 +434,18 @@ export default function ProjectPage() {
             )}
             {project.comps.map((c, i) => {
               const row = analysis.rows.find((r) => r.comp.id === c.id);
+              const open = isOpen(c);
               return (
                 <div key={c.id} className="card p-5 transition" style={c.included && !heldBack(c.id) ? undefined : { borderStyle: "dashed", background: "var(--surface-2)" }}>
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-semibold">{t("comp.n", { n: i + 1 })}{heldBack(c.id) && <span className="ms-2 font-normal" style={{ color: "var(--warn)" }}>🔒 {t("billing.compHeldBack")}</span>}</span>
-                    <div className="no-print flex flex-wrap items-center gap-x-4 text-sm">
-                      <label className="tap flex items-center gap-2">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap items-center gap-x-4">
+                      <span className="text-sm font-semibold">{t("comp.n", { n: i + 1 })}{heldBack(c.id) && <span className="ms-2 font-normal" style={{ color: "var(--warn)" }}>🔒 {t("billing.compHeldBack")}</span>}</span>
+                      <label className="tap no-print flex items-center gap-2 text-sm">
                         <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> {t("common.use")}
                       </label>
+                    </div>
+                    <div className="no-print flex flex-wrap items-center gap-x-4 text-sm">
+                      <button className="muted tap hover:underline" aria-expanded={open} onClick={() => setOpenComps({ ...openComps, [c.id]: !open })}>{open ? t("comp.hideDetails") : t("comp.showDetails")}</button>
                       <button className="muted tap hover:underline" onClick={() => duplicateComp(c.id)}>{t("common.duplicate")}</button>
                       <button
                         className="muted tap hover:underline"
@@ -419,7 +456,13 @@ export default function ProjectPage() {
                       >{t("common.remove")}</button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {!open && (
+                    <p className="mb-1 text-sm [overflow-wrap:anywhere] print:hidden">
+                      <bdi className="font-semibold">{c.address || t("common.unnamedComp")}</bdi>
+                      <span className="muted"> · {c.salePrice > 0 ? usd(c.salePrice) : "—"}{c.saleDate ? ` · ${c.saleDate}` : ""}</span>
+                    </p>
+                  )}
+                  <div className={`grid-cols-2 gap-3 md:grid-cols-4 ${open ? "grid" : "hidden print:grid"}`}>
                     <label className="field col-span-2">{t("field.address")}
                       <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
                       {(() => { const g = validGeo(c.geo, c.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
@@ -432,6 +475,10 @@ export default function ProjectPage() {
                     {!land && <Num label={t("field.beds")} value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} />}
                     {!land && <Num label={t("field.baths")} step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} />}
                     {!land && <Num label={t("field.yearBuilt")} value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />}
+                    {unit && <OptNum label={t("field.floor")} value={c.floor} onChange={(n) => setComp(c.id, { floor: n })} />}
+                    {unit && <OptNum label={t("field.parking")} value={c.parking} onChange={(n) => setComp(c.id, { parking: n })} />}
+                    {unit && <OptNum label={t("field.monthlyFee")} value={c.monthlyFee} onChange={(n) => setComp(c.id, { monthlyFee: n })} />}
+                    {estate && <OptNum label={t("field.lotAcres")} step={0.01} value={c.acres} onChange={(n) => setComp(c.id, { acres: n })} />}
                     <Num label={c.distanceComputed ? t("comp.distanceMap") : t("comp.distance")} step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n, distanceComputed: false })} />
                     <Money label={t("comp.otherAdj")} negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
                     <label className="field col-span-2">{t("comp.source")} <span className="font-normal">{t("comp.sourceHint")}</span>
@@ -458,7 +505,7 @@ export default function ProjectPage() {
           </section>
 
           {(!guided || step === 4) && !isBlank && (
-            <MarketPanel className="no-print" country={project.subject.country} comps={analysis.rows.map((r) => ({ id: r.comp.id, address: r.comp.address, saleDate: r.comp.saleDate }))} />
+            <MarketPanel className="no-print" country={project.subject.country} onChooseCountry={(c) => setSubject({ country: c })} comps={analysis.rows.map((r) => ({ id: r.comp.id, address: r.comp.address, saleDate: r.comp.saleDate }))} />
           )}
 
           {guided && (

@@ -81,6 +81,19 @@ The scenarios apply the growth rates the owner chooses to today's indicated valu
 
 The web app is ready to be wrapped for the stores, and the store requirements that can be met in code are met: privacy and support pages, in-app account deletion, and no plan sales inside a store app. The native apps themselves are not built; see [docs/native-apps.md](docs/native-apps.md) for the plan, the review risks and the decisions you need to make (especially how to sell plans through Apple and Google).
 
+## Property types
+
+Pick the type first on every analysis; all reports, the CSV and the buyer checklist follow it.
+
+| Type | Sized by | Also adjusted for | Reliability checks (full marks → zero) |
+| --- | --- | --- | --- |
+| Home | square feet | beds, baths, age | recency 90 → 365 days; distance 0.5 → 3 mi |
+| Apartment, Condominium | square feet | beds, baths, age, **floor, parking spaces, monthly building or association fee** | recency 90 → 365 days; distance 0.25 → 2 mi |
+| Luxury estate | living area (sq ft) | beds, baths, age, **grounds in acres** | recency 180 → 730 days; distance 2 → 15 mi |
+| Land | acres | size only | recency 180 → 730 days; distance 1 → 10 mi |
+
+A floor, parking, fee or acreage figure is used only when it is entered for **both** the subject and the comp, so a blank never invents an adjustment (an entered 0 is a real answer). A higher monthly fee for the subject lowers its value. The thresholds live in `src/lib/profile.ts` and the placeholder rates in `src/lib/comps.ts`; the placeholder rates are starting points that the app flags and caps the reliability grade for until you set your own. Each type also gets its own limitation note and buyer checklist. "Apartment" and "condominium" mean a single unit; valuing a whole apartment building (multifamily, by income) is not covered.
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 
