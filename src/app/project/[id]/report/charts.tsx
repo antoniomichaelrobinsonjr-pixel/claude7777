@@ -138,7 +138,8 @@ export function DistanceBars({ comps }: { comps: CompEvidence[] }) {
   const missing = comps.length - withDist.length;
   if (withDist.length === 0) return <p className="muted text-sm">{t("distance.none")}</p>;
   const max = Math.max(1, Math.ceil(Math.max(...withDist.map((c) => c.distanceMi!)) * 2) / 2);
-  const pos = (mi: number) => `${(mi / max) * 100}%`;
+  // Leave room at the right for the label after the longest bar, whatever the language.
+  const pos = (mi: number) => `${(mi / max) * 84}%`;
 
   return (
     <div>

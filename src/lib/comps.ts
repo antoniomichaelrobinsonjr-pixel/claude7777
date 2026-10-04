@@ -17,6 +17,8 @@ export interface Subject {
   baths: number;
   yearBuilt: number;
   geo?: GeoPoint;
+  /** ISO 3166-1 country code, used to show that country's market data. */
+  country?: string;
 }
 
 export interface Comp {

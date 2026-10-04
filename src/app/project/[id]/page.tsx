@@ -6,6 +6,8 @@ import { getProject, saveProject } from "@/lib/storage";
 import { useI18n } from "@/i18n";
 import { useEntitlements } from "@/billing/entitlements";
 import { GatedButton } from "@/billing/ui";
+import { countryOptions } from "@/market/countries";
+import { MarketPanel } from "@/market/panel";
 import { readMoney, showMoney, type Vars } from "@/i18n/format";
 import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
 import { analyze, exampleData, newComp, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
@@ -105,7 +107,8 @@ const STEP_KEYS = ["steps.subject", "steps.rates", "steps.comps", "steps.result"
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
-  const { t, rich, usd, date } = useI18n();
+  const { t, rich, usd, date, info } = useI18n();
+  const countries = useMemo(() => countryOptions(info.intl), [info.intl]);
   const ent = useEntitlements();
   const [project, setProject] = useState<Project | null>(null);
   const [status, setStatus] = useState<{ kind: "saving" | "saved" | "failed"; message?: string } | null>(null);
@@ -301,13 +304,19 @@ export default function ProjectPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <section className={`card p-5 ${show(1)}`}>
             <Step n={1} title={t("step1.title")} hint={t("step1.hint")} />
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <label className="field col-span-2 md:col-span-4">{t("field.address")}
                 <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
                 {(() => { const g = validGeo(project.subject.geo, project.subject.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
+              </label>
+              <label className="field col-span-2 md:col-span-2">{t("field.country")}
+                <select className="input" value={project.subject.country ?? ""} onChange={(e) => setSubject({ country: e.target.value || undefined })}>
+                  <option value="">{t("field.countryNone")}</option>
+                  {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+                </select>
               </label>
               <Num label={t("field.sqft")} value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
               <Num label={t("field.beds")} value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />
@@ -345,7 +354,7 @@ export default function ProjectPage() {
           )}
 
           <section className={`space-y-3 ${show(3)}`}>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Step n={3} title={t("step3.title")} hint={t("step3.hint")} />
               <button className="btn btn-primary no-print" disabled={atCompLimit} title={atCompLimit ? t("billing.limit.comps", { count: ent.maxComps }) : undefined} onClick={() => set({ comps: [...project.comps, newComp()] })}>{t("comp.add")}</button>
             </div>
@@ -380,9 +389,9 @@ export default function ProjectPage() {
               const row = analysis.rows.find((r) => r.comp.id === c.id);
               return (
                 <div key={c.id} className="card p-5 transition" style={c.included && !heldBack(c.id) ? undefined : { borderStyle: "dashed", background: "var(--surface-2)" }}>
-                  <div className="mb-3 flex items-center justify-between">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold">{t("comp.n", { n: i + 1 })}{heldBack(c.id) && <span className="ms-2 font-normal" style={{ color: "var(--warn)" }}>🔒 {t("billing.compHeldBack")}</span>}</span>
-                    <div className="no-print flex items-center gap-4 text-sm">
+                    <div className="no-print flex flex-wrap items-center gap-x-4 text-sm">
                       <label className="tap flex items-center gap-2">
                         <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> {t("common.use")}
                       </label>
@@ -433,6 +442,10 @@ export default function ProjectPage() {
               );
             })}
           </section>
+
+          {(!guided || step === 4) && !isBlank && (
+            <MarketPanel className="no-print" country={project.subject.country} comps={analysis.rows.map((r) => ({ id: r.comp.id, address: r.comp.address, saleDate: r.comp.saleDate }))} />
+          )}
 
           {guided && (
             <div className="no-print flex items-center justify-between gap-3">

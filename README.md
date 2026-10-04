@@ -53,6 +53,15 @@ To switch it on:
 
 Checkout, webhook and database rules are tested offline (fake Stripe events, real Postgres via PGlite). They have not been run against live Stripe.
 
+## Daily market updates
+
+Plus and above (open to everyone while billing is off). Pick the property's country on the analysis and CompPilot shows how home prices in that country have moved over the last year, a small trend line, and how far the market has moved since each comp sold. It is context only: it never changes the value, and the panel says so.
+
+- **Source:** the Bank for International Settlements residential property price statistics (nominal index, quarterly, about sixty countries). Countries the BIS does not publish show "no market data yet". Nothing is estimated or invented.
+- **"Daily" means the check is daily.** The BIS publishes new figures quarterly, so the numbers change when a new quarter is released; the panel shows when it was last checked and the latest quarter.
+- **Setup:** run `supabase/market.sql`; set `CRON_SECRET`; have a scheduler call `GET /api/cron/market` daily with `Authorization: Bearer $CRON_SECRET`. `.github/workflows/market-refresh.yml` does this (add `MARKET_CRON_URL` and `CRON_SECRET` as repository secrets), or use Vercel Cron. The job saves nothing unless the whole download looks sane, so a bad day at the source leaves the previous data in place.
+- **Not yet verified against the live BIS service.** The download and parser are tested on sample files written from the BIS documentation, but this build environment cannot reach stats.bis.org. Run the endpoint once after deploying and check the response; if the BIS has changed its address, set `MARKET_BIS_URL`.
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 

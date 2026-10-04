@@ -10,6 +10,7 @@ import { useI18n } from "@/i18n";
 import { n } from "@/i18n/format";
 import { useEntitlements } from "@/billing/entitlements";
 import { GatedButton, UpgradeNotice } from "@/billing/ui";
+import { MarketPanel } from "@/market/panel";
 import { BRAND_KEY, checkLogo, parseBrand, type Brand } from "@/billing/brand";
 import { safeFileName, toCsv } from "@/lib/csv";
 import { DistanceBars, TrendChart } from "./charts";
@@ -299,6 +300,11 @@ export default function ReportPage() {
               <TrendChart trend={report.trend} />
             </Section>
           ) : <UpgradeNotice feature="reportTrend" />}
+
+          <MarketPanel
+            className="break-inside-avoid" showChoose={false} country={effective!.subject.country}
+            comps={effective!.comps.filter((c) => c.included).map((c) => ({ id: c.id, address: c.address, saleDate: c.saleDate }))}
+          />
 
           {ent.can("reportMap") ? (
           <Section title={t("map.title")}>
