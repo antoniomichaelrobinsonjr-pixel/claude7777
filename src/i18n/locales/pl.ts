@@ -557,5 +557,14 @@ const messages: Dict = {
   "owner.col.when": "Kiedy",
   "print.lockedTitle": "Drukowanie jest funkcją dla członków",
   "print.lockedBody": "Drukowanie i zapisywanie jako PDF są dostępne w płatnych planach. Otwórz CompPilot i wybierz plan, aby wydrukować ten raport.",
+  "footer.privacy": "Prywatność",
+  "footer.support": "Pomoc",
+  "native.purchaseSoon": "Planów nie można jeszcze kupić w tej aplikacji. Jeśli masz już plan, zaloguj się, a pojawi się tutaj.",
+  "account.delete.title": "Usuń konto",
+  "account.delete.body": "Spowoduje to trwałe usunięcie Twojego konta i wszystkich zapisanych na nim analiz oraz natychmiastowe anulowanie każdego planu kupionego w internecie. Tej operacji nie można cofnąć. Analizy zapisane tylko na tym urządzeniu nie należą do Twojego konta.",
+  "account.delete.button": "Usuń moje konto",
+  "account.delete.confirm": "Tak, usuń wszystko",
+  "account.delete.cancel": "Zachowaj moje konto",
+  "account.delete.failed": "Nie udało się usunąć konta i nic nie zostało zmienione. Spróbuj ponownie lub skontaktuj się z pomocą.",
 };
 export default messages;

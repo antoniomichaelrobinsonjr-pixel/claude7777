@@ -1,0 +1,11 @@
+{
+  "appId": "com.example.comppilot",
+  "appName": "CompPilot",
+  "webDir": "public",
+  "server": {
+    "url": "https://REPLACE-WITH-YOUR-SITE.example",
+    "cleartext": false
+  },
+  "ios": { "contentInset": "automatic" },
+  "android": { "allowMixedContent": false }
+}

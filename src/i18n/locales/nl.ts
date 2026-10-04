@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Wanneer",
   "print.lockedTitle": "Afdrukken is een functie voor leden",
   "print.lockedBody": "Afdrukken en opslaan als pdf zijn onderdeel van de betaalde abonnementen. Open CompPilot en kies een abonnement om dit rapport af te drukken.",
+  "footer.privacy": "Privacy",
+  "footer.support": "Ondersteuning",
+  "native.purchaseSoon": "Abonnementen kunnen in deze app nog niet worden gekocht. Als u al een abonnement hebt, log dan in en het verschijnt hier.",
+  "account.delete.title": "Account verwijderen",
+  "account.delete.body": "Hiermee worden uw account en alle analyses die erin zijn opgeslagen definitief verwijderd, en wordt elk abonnement dat u op het web hebt gekocht meteen opgezegd. Dit kan niet ongedaan worden gemaakt. Analyses die alleen op dit apparaat zijn opgeslagen, maken geen deel uit van uw account.",
+  "account.delete.button": "Mijn account verwijderen",
+  "account.delete.confirm": "Ja, alles verwijderen",
+  "account.delete.cancel": "Mijn account behouden",
+  "account.delete.failed": "Het account kon niet worden verwijderd en er is niets gewijzigd. Probeer het opnieuw of neem contact op met de ondersteuning.",
 };
 export default messages;

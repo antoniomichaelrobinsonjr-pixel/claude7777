@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Quando",
   "print.lockedTitle": "La stampa è una funzione per i membri",
   "print.lockedBody": "Stampare e salvare in PDF è incluso nei piani a pagamento. Apri CompPilot e scegli un piano per stampare questo report.",
+  "footer.privacy": "Privacy",
+  "footer.support": "Assistenza",
+  "native.purchaseSoon": "Per ora non è possibile acquistare piani in questa app. Se hai già un piano, accedi e comparirà qui.",
+  "account.delete.title": "Elimina account",
+  "account.delete.body": "Questa azione elimina definitivamente il tuo account e tutte le analisi salvate al suo interno, e annulla subito qualsiasi piano acquistato sul web. Non può essere annullata. Le analisi salvate solo su questo dispositivo non fanno parte del tuo account.",
+  "account.delete.button": "Elimina il mio account",
+  "account.delete.confirm": "Sì, elimina tutto",
+  "account.delete.cancel": "Mantieni il mio account",
+  "account.delete.failed": "Non è stato possibile eliminare l'account e non è stato modificato nulla. Riprova o contatta l'assistenza.",
 };
 export default messages;

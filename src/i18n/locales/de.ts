@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Wann",
   "print.lockedTitle": "Drucken ist eine Mitgliederfunktion",
   "print.lockedBody": "Drucken und Speichern als PDF sind in den kostenpflichtigen Tarifen enthalten. Öffnen Sie CompPilot und wählen Sie einen Tarif, um diesen Bericht zu drucken.",
+  "footer.privacy": "Datenschutz",
+  "footer.support": "Support",
+  "native.purchaseSoon": "Tarife können in dieser App noch nicht gekauft werden. Wenn Sie bereits einen Tarif haben, melden Sie sich an, dann erscheint er hier.",
+  "account.delete.title": "Konto löschen",
+  "account.delete.body": "Dadurch werden Ihr Konto und alle darin gespeicherten Analysen dauerhaft gelöscht, und jeder im Web gekaufte Tarif wird sofort gekündigt. Das lässt sich nicht rückgängig machen. Analysen, die nur auf diesem Gerät gespeichert sind, gehören nicht zu Ihrem Konto.",
+  "account.delete.button": "Mein Konto löschen",
+  "account.delete.confirm": "Ja, alles löschen",
+  "account.delete.cancel": "Konto behalten",
+  "account.delete.failed": "Das Konto konnte nicht gelöscht werden, und es wurde nichts geändert. Versuchen Sie es erneut oder wenden Sie sich an den Support.",
 };
 export default messages;

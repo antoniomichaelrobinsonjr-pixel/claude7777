@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Lini",
   "print.lockedTitle": "Kuchapisha ni kipengele cha wanachama",
   "print.lockedBody": "Kuchapisha na kuhifadhi kama PDF kunapatikana kwenye mipango ya kulipia. Fungua CompPilot na uchague mpango ili uchapishe ripoti hii.",
+  "footer.privacy": "Faragha",
+  "footer.support": "Usaidizi",
+  "native.purchaseSoon": "Mipango bado haiwezi kununuliwa kwenye programu hii. Ikiwa tayari una mpango, ingia na utaonekana hapa.",
+  "account.delete.title": "Futa akaunti",
+  "account.delete.body": "Hii inafuta kabisa akaunti yako na uchambuzi wote uliohifadhiwa ndani yake, na inaghairi mara moja mpango wowote ulioununua kwenye wavuti. Haiwezi kutenduliwa. Uchambuzi uliohifadhiwa kwenye kifaa hiki pekee si sehemu ya akaunti yako.",
+  "account.delete.button": "Futa akaunti yangu",
+  "account.delete.confirm": "Ndiyo, futa kila kitu",
+  "account.delete.cancel": "Weka akaunti yangu",
+  "account.delete.failed": "Akaunti haikuweza kufutwa, na hakuna kilichobadilishwa. Jaribu tena, au wasiliana na usaidizi.",
 };
 export default messages;

@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Quando",
   "print.lockedTitle": "Imprimir é um recurso para membros",
   "print.lockedBody": "Imprimir e salvar como PDF fazem parte dos planos pagos. Abra o CompPilot e escolha um plano para imprimir este relatório.",
+  "footer.privacy": "Privacidade",
+  "footer.support": "Suporte",
+  "native.purchaseSoon": "Ainda não é possível comprar planos neste app. Se você já tem um plano, entre e ele aparecerá aqui.",
+  "account.delete.title": "Excluir conta",
+  "account.delete.body": "Isso exclui permanentemente sua conta e todas as análises salvas nela, e cancela imediatamente qualquer plano que você comprou na web. Não é possível desfazer. As análises salvas apenas neste dispositivo não fazem parte da sua conta.",
+  "account.delete.button": "Excluir minha conta",
+  "account.delete.confirm": "Sim, excluir tudo",
+  "account.delete.cancel": "Manter minha conta",
+  "account.delete.failed": "Não foi possível excluir a conta e nada foi alterado. Tente novamente ou entre em contato com o suporte.",
 };
 export default messages;

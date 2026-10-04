@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "När",
   "print.lockedTitle": "Utskrift är en medlemsfunktion",
   "print.lockedBody": "Utskrift och sparande som PDF ingår i de betalda planerna. Öppna CompPilot och välj en plan för att skriva ut den här rapporten.",
+  "footer.privacy": "Integritet",
+  "footer.support": "Support",
+  "native.purchaseSoon": "Planer kan inte köpas i den här appen än. Om du redan har en plan, logga in så visas den här.",
+  "account.delete.title": "Radera konto",
+  "account.delete.body": "Det här raderar ditt konto permanent, tillsammans med alla analyser som sparats i det, och avslutar direkt alla planer du har köpt på webben. Det går inte att ångra. Analyser som bara är sparade på den här enheten ingår inte i ditt konto.",
+  "account.delete.button": "Radera mitt konto",
+  "account.delete.confirm": "Ja, radera allt",
+  "account.delete.cancel": "Behåll mitt konto",
+  "account.delete.failed": "Kontot kunde inte raderas och ingenting ändrades. Försök igen eller kontakta supporten.",
 };
 export default messages;

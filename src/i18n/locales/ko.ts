@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "시기",
   "print.lockedTitle": "인쇄는 회원 전용 기능입니다",
   "print.lockedBody": "인쇄와 PDF 저장은 유료 요금제에 포함되어 있습니다. 이 보고서를 인쇄하려면 CompPilot을 열어 요금제를 선택하세요.",
+  "footer.privacy": "개인정보 처리방침",
+  "footer.support": "지원",
+  "native.purchaseSoon": "이 앱에서는 아직 요금제를 구매할 수 없습니다. 이미 요금제가 있다면 로그인하세요. 요금제가 여기에 표시됩니다.",
+  "account.delete.title": "계정 삭제",
+  "account.delete.body": "계정과 계정에 저장된 모든 분석이 영구적으로 삭제되며, 웹에서 구매한 요금제도 즉시 취소됩니다. 이 작업은 되돌릴 수 없습니다. 이 기기에만 저장된 분석은 계정에 포함되지 않습니다.",
+  "account.delete.button": "내 계정 삭제",
+  "account.delete.confirm": "예, 모두 삭제합니다",
+  "account.delete.cancel": "내 계정 유지",
+  "account.delete.failed": "계정을 삭제하지 못했으며 변경된 내용은 없습니다. 다시 시도하거나 지원팀에 문의하세요.",
 };
 export default messages;

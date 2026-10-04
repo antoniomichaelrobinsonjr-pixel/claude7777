@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "時期",
   "print.lockedTitle": "印刷は会員向けの機能です",
   "print.lockedBody": "印刷とPDF保存は有料プランに含まれています。このレポートを印刷するには、CompPilot を開いてプランを選択してください。",
+  "footer.privacy": "プライバシー",
+  "footer.support": "サポート",
+  "native.purchaseSoon": "このアプリではまだプランを購入できません。すでにプランをお持ちの場合は、ログインするとここに表示されます。",
+  "account.delete.title": "アカウントを削除",
+  "account.delete.body": "アカウントと、アカウントに保存されたすべての分析が完全に削除され、ウェブで購入したプランもただちに解約されます。この操作は元に戻せません。この端末にのみ保存されている分析はアカウントに含まれません。",
+  "account.delete.button": "アカウントを削除する",
+  "account.delete.confirm": "はい、すべて削除する",
+  "account.delete.cancel": "アカウントを残す",
+  "account.delete.failed": "アカウントを削除できませんでした。変更は行われていません。もう一度お試しいただくか、サポートにお問い合わせください。",
 };
 export default messages;

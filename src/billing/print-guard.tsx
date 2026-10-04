@@ -23,7 +23,7 @@ export function PrintGuard() {
   if (!locked) return null;
   return (
     <div className="print-lock-notice" role="note">
-      <h1 className="display text-3xl font-bold">{t("print.lockedTitle")}</h1>
+      <p className="display text-3xl font-bold">{t("print.lockedTitle")}</p>
       <p className="mt-3 text-lg">{t("print.lockedBody")}</p>
     </div>
   );

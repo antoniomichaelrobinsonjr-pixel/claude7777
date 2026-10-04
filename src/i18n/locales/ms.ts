@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "Bila",
   "print.lockedTitle": "Cetakan ialah ciri untuk ahli",
   "print.lockedBody": "Cetakan dan simpanan PDF disertakan dalam pelan berbayar. Buka CompPilot dan pilih pelan untuk mencetak laporan ini.",
+  "footer.privacy": "Privasi",
+  "footer.support": "Sokongan",
+  "native.purchaseSoon": "Pelan belum boleh dibeli dalam aplikasi ini. Jika anda sudah mempunyai pelan, log masuk dan pelan itu akan muncul di sini.",
+  "account.delete.title": "Padam akaun",
+  "account.delete.body": "Tindakan ini memadam akaun anda dan semua analisis yang disimpan di dalamnya secara kekal, dan membatalkan sebarang pelan yang anda beli di web dengan serta-merta. Tindakan ini tidak boleh dibuat asal. Analisis yang hanya disimpan pada peranti ini bukan sebahagian daripada akaun anda.",
+  "account.delete.button": "Padam akaun saya",
+  "account.delete.confirm": "Ya, padam semuanya",
+  "account.delete.cancel": "Kekalkan akaun saya",
+  "account.delete.failed": "Akaun tidak dapat dipadam, dan tiada apa-apa yang diubah. Cuba lagi, atau hubungi sokongan.",
 };
 export default messages;

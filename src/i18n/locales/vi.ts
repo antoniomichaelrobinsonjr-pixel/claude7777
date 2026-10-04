@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "Thời điểm",
   "print.lockedTitle": "In là tính năng dành cho thành viên",
   "print.lockedBody": "In và lưu PDF có trong các gói trả phí. Hãy mở CompPilot và chọn một gói để in báo cáo này.",
+  "footer.privacy": "Quyền riêng tư",
+  "footer.support": "Hỗ trợ",
+  "native.purchaseSoon": "Ứng dụng này chưa hỗ trợ mua gói. Nếu bạn đã có gói, hãy đăng nhập và gói sẽ hiển thị tại đây.",
+  "account.delete.title": "Xóa tài khoản",
+  "account.delete.body": "Thao tác này sẽ xóa vĩnh viễn tài khoản của bạn cùng mọi phân tích đã lưu trong tài khoản, đồng thời hủy ngay mọi gói bạn đã mua trên web. Không thể hoàn tác. Các phân tích chỉ lưu trên thiết bị này không thuộc tài khoản của bạn.",
+  "account.delete.button": "Xóa tài khoản của tôi",
+  "account.delete.confirm": "Có, xóa tất cả",
+  "account.delete.cancel": "Giữ tài khoản của tôi",
+  "account.delete.failed": "Không thể xóa tài khoản và chưa có gì thay đổi. Hãy thử lại hoặc liên hệ bộ phận hỗ trợ.",
 };
 export default messages;

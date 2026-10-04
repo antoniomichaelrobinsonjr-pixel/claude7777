@@ -5,6 +5,7 @@ import Header from "./header";
 import { I18nProvider } from "@/i18n";
 import { EntitlementsProvider } from "@/billing/entitlements";
 import { PrintGuard } from "@/billing/print-guard";
+import Footer from "./footer";
 
 export const metadata: Metadata = {
   title: "CompPilot",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="app-shell">
               <Header />
               <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+              <Footer />
             </div>
             <PrintGuard />
           </EntitlementsProvider>

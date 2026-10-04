@@ -591,5 +591,14 @@ const messages: Dict = {
   "owner.col.when": "متى",
   "print.lockedTitle": "الطباعة ميزة للأعضاء",
   "print.lockedBody": "الطباعة والحفظ بصيغة PDF متاحتان ضمن الخطط المدفوعة. افتح CompPilot واختر خطة لطباعة هذا التقرير.",
+  "footer.privacy": "الخصوصية",
+  "footer.support": "الدعم",
+  "native.purchaseSoon": "لا يمكن شراء الخطط في هذا التطبيق بعد. إذا كانت لديك خطة بالفعل، فسجّل الدخول وستظهر هنا.",
+  "account.delete.title": "حذف الحساب",
+  "account.delete.body": "سيؤدي هذا إلى حذف حسابك وجميع التحليلات المحفوظة فيه نهائيًا، وإلغاء أي خطة اشتريتها عبر الويب فورًا. لا يمكن التراجع عن ذلك. التحليلات المحفوظة على هذا الجهاز فقط ليست جزءًا من حسابك.",
+  "account.delete.button": "حذف حسابي",
+  "account.delete.confirm": "نعم، احذف كل شيء",
+  "account.delete.cancel": "الاحتفاظ بحسابي",
+  "account.delete.failed": "تعذّر حذف الحساب ولم يتم تغيير أي شيء. حاول مرة أخرى أو تواصل مع الدعم.",
 };
 export default messages;

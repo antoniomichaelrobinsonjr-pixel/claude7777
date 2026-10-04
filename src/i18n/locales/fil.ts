@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Kailan",
   "print.lockedTitle": "Ang pag-print ay tampok para sa mga miyembro",
   "print.lockedBody": "Ang pag-print at pag-save bilang PDF ay kasama sa mga bayad na plano. Buksan ang CompPilot at pumili ng plano para i-print ang ulat na ito.",
+  "footer.privacy": "Privacy",
+  "footer.support": "Suporta",
+  "native.purchaseSoon": "Hindi pa mabibili ang mga plano sa app na ito. Kung mayroon ka nang plano, mag-sign in at lalabas ito rito.",
+  "account.delete.title": "Burahin ang account",
+  "account.delete.body": "Permanenteng buburahin nito ang iyong account at lahat ng pagsusuring naka-save dito, at agad nitong kakanselahin ang anumang planong binili mo sa web. Hindi ito mababawi. Ang mga pagsusuring naka-save lang sa device na ito ay hindi bahagi ng iyong account.",
+  "account.delete.button": "Burahin ang aking account",
+  "account.delete.confirm": "Oo, burahin ang lahat",
+  "account.delete.cancel": "Panatilihin ang aking account",
+  "account.delete.failed": "Hindi nabura ang account, at walang nabago. Subukan muli, o makipag-ugnayan sa suporta.",
 };
 export default messages;

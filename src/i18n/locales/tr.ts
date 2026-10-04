@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Ne zaman",
   "print.lockedTitle": "Yazdırma bir üye özelliğidir",
   "print.lockedBody": "Yazdırma ve PDF olarak kaydetme ücretli planlara dahildir. Bu raporu yazdırmak için CompPilot'u açın ve bir plan seçin.",
+  "footer.privacy": "Gizlilik",
+  "footer.support": "Destek",
+  "native.purchaseSoon": "Planlar bu uygulamada henüz satın alınamıyor. Zaten bir planınız varsa giriş yapın, burada görünecektir.",
+  "account.delete.title": "Hesabı sil",
+  "account.delete.body": "Bu işlem hesabınızı ve hesabınıza kaydedilen tüm analizleri kalıcı olarak siler ve web'den satın aldığınız planları hemen iptal eder. Geri alınamaz. Yalnızca bu cihazda kayıtlı analizler hesabınızın parçası değildir.",
+  "account.delete.button": "Hesabımı sil",
+  "account.delete.confirm": "Evet, her şeyi sil",
+  "account.delete.cancel": "Hesabımı koru",
+  "account.delete.failed": "Hesap silinemedi ve hiçbir şey değiştirilmedi. Tekrar deneyin veya destekle iletişime geçin.",
 };
 export default messages;

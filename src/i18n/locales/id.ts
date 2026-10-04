@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "Kapan",
   "print.lockedTitle": "Cetak adalah fitur untuk anggota",
   "print.lockedBody": "Cetak dan simpan PDF tersedia di paket berbayar. Buka CompPilot dan pilih paket untuk mencetak laporan ini.",
+  "footer.privacy": "Privasi",
+  "footer.support": "Dukungan",
+  "native.purchaseSoon": "Paket belum bisa dibeli di aplikasi ini. Jika Anda sudah punya paket, masuk dan paket akan muncul di sini.",
+  "account.delete.title": "Hapus akun",
+  "account.delete.body": "Tindakan ini menghapus akun Anda secara permanen beserta semua analisis yang tersimpan di dalamnya, dan langsung membatalkan paket apa pun yang Anda beli di web. Tindakan ini tidak dapat dibatalkan. Analisis yang hanya tersimpan di perangkat ini bukan bagian dari akun Anda.",
+  "account.delete.button": "Hapus akun saya",
+  "account.delete.confirm": "Ya, hapus semuanya",
+  "account.delete.cancel": "Pertahankan akun saya",
+  "account.delete.failed": "Akun tidak dapat dihapus, dan tidak ada yang diubah. Coba lagi, atau hubungi dukungan.",
 };
 export default messages;

@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n";
 import { n } from "@/i18n/format";
 import { supabase } from "@/lib/supabase";
 import { useEntitlements } from "@/billing/entitlements";
+import { nativePlatform } from "@/lib/platform";
 import { FEATURES, INTERVALS, PLANS, PLAN_IDS, can, monthlyEquivalentCents, trialEligible, yearlySavingsPct, type Interval, type PlanId } from "@/billing/plans";
 
 const RECOMMENDED: PlanId = "pro";
@@ -58,6 +59,9 @@ export default function PricingPage() {
     const cents = PLANS[plan].prices[interval];
     return cents === null ? null : usd(cents / 100);
   };
+  // Inside a store app, plans are not sold here (the stores require their own purchase system); existing plans still work.
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(nativePlatform() !== null), []);
   const subscribed = ent.subscription && ent.planId !== "starter";
   const dateOf = (iso: string | null) => (iso ? date(new Date(iso)) : "");
 
@@ -82,6 +86,7 @@ export default function PricingPage() {
       )}
 
       {banner === "success" && <p className="card p-4 text-center text-sm" role="status" style={{ color: "var(--ok)" }}>{t("pricing.success")}</p>}
+      {native && <p className="card muted p-4 text-center text-sm" role="note">{t("native.purchaseSoon")}</p>}
       {banner === "cancelled" && <p className="card muted p-4 text-center text-sm" role="status">{t("pricing.cancelled")}</p>}
       {error && <p className="card p-4 text-center text-sm" role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
 
@@ -139,14 +144,14 @@ export default function PricingPage() {
                 {plan.features.filter((f) => !PLANS[PLAN_IDS[plan.rank - 1] ?? "starter"].features.includes(f)).map((f) => <li key={f}>✓ {t(`feature.${f}`)}</li>)}
               </ul>
               <div className="mt-auto space-y-3">
-                {ent.billingEnabled && !current && !subscribed && id !== "starter" && price(id) !== null && (!ent.signedIn || trialEligible(id, ent.trialsUsed)) && (
+                {ent.billingEnabled && !native && !current && !subscribed && id !== "starter" && price(id) !== null && (!ent.signedIn || trialEligible(id, ent.trialsUsed)) && (
                   <p className="muted text-xs">{t("pricing.trialTerms", { price: t(`billing.price.${interval}`, { price: price(id)! }) })}</p>
                 )}
                 {current ? (
                   <button className="btn w-full justify-center" disabled>{t("pricing.cta.current")}</button>
                 ) : id === "starter" ? (
                   <Link href="/" className="btn w-full justify-center">{t("pricing.cta.startFree")}</Link>
-                ) : !ent.billingEnabled ? (
+                ) : native ? null : !ent.billingEnabled ? (
                   <button className="btn w-full justify-center" disabled>{t("pricing.cta.unavailable")}</button>
                 ) : !ent.signedIn ? (
                   <Link href="/login?next=/pricing" className="btn btn-primary w-full justify-center">{t("pricing.cta.signIn")}</Link>
@@ -172,7 +177,7 @@ export default function PricingPage() {
               : ent.subscription.status === "trialing" ? t("pricing.status.trialing", { date: dateOf(ent.subscription.currentPeriodEnd) })
               : ent.subscription.currentPeriodEnd ? t("pricing.status.renews", { date: dateOf(ent.subscription.currentPeriodEnd) }) : ""}
           </p>
-          <button className="btn mt-3" disabled={busy !== null} onClick={async () => { setBusy("portal"); await call("portal"); setBusy(null); }}>{t("pricing.cta.manage")}</button>
+          {!native && <button className="btn mt-3" disabled={busy !== null} onClick={async () => { setBusy("portal"); await call("portal"); setBusy(null); }}>{t("pricing.cta.manage")}</button>}
         </div>
       )}
 
@@ -211,7 +216,7 @@ export default function PricingPage() {
       </section>
 
       <ul className="muted mx-auto max-w-3xl list-disc space-y-2 ps-5 text-sm">
-        <li>{t("pricing.renew")}</li>
+        {!native && <li>{t("pricing.renew")}</li>}
         <li>{t("pricing.downgrade")}</li>
         <li>{t("pricing.notAppraisal")}</li>
         <li>{t("pricing.currency")}</li>

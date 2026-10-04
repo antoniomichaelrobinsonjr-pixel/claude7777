@@ -540,5 +540,14 @@ const messages: Dict = {
   "owner.col.when": "מתי",
   "print.lockedTitle": "הדפסה היא תכונה לחברים",
   "print.lockedBody": "הדפסה ושמירה כ-PDF כלולות בתוכניות בתשלום. פתחו את CompPilot ובחרו תוכנית כדי להדפיס את הדוח הזה.",
+  "footer.privacy": "פרטיות",
+  "footer.support": "תמיכה",
+  "native.purchaseSoon": "עדיין אי אפשר לרכוש תוכניות באפליקציה הזו. אם כבר יש לכם תוכנית, התחברו והיא תופיע כאן.",
+  "account.delete.title": "מחיקת החשבון",
+  "account.delete.body": "פעולה זו מוחקת לצמיתות את החשבון שלכם ואת כל הניתוחים השמורים בו, ומבטלת מיד כל תוכנית שרכשתם באינטרנט. אי אפשר לבטל אותה. ניתוחים השמורים רק במכשיר הזה אינם חלק מהחשבון שלכם.",
+  "account.delete.button": "מחיקת החשבון שלי",
+  "account.delete.confirm": "כן, למחוק הכול",
+  "account.delete.cancel": "להשאיר את החשבון שלי",
+  "account.delete.failed": "לא ניתן היה למחוק את החשבון, ושום דבר לא שונה. נסו שוב או פנו לתמיכה.",
 };
 export default messages;

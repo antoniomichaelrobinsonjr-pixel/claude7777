@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "时间",
   "print.lockedTitle": "打印功能仅限会员使用",
   "print.lockedBody": "打印和另存为 PDF 包含在付费套餐中。请打开 CompPilot 并选择一个套餐，以打印此报告。",
+  "footer.privacy": "隐私",
+  "footer.support": "支持",
+  "native.purchaseSoon": "此应用暂不支持购买套餐。如果您已有套餐，请登录，套餐将显示在这里。",
+  "account.delete.title": "删除账户",
+  "account.delete.body": "此操作将永久删除您的账户及其中保存的所有分析，并立即取消您在网页上购买的所有套餐。此操作无法撤销。仅保存在此设备上的分析不属于您的账户。",
+  "account.delete.button": "删除我的账户",
+  "account.delete.confirm": "是，删除所有内容",
+  "account.delete.cancel": "保留我的账户",
+  "account.delete.failed": "账户无法删除，且未做任何更改。请重试，或联系支持。",
 };
 export default messages;

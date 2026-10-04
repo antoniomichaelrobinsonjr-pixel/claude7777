@@ -540,5 +540,14 @@ const messages: Dict = {
   "owner.col.when": "Când",
   "print.lockedTitle": "Tipărirea este o funcție pentru membri",
   "print.lockedBody": "Tipărirea și salvarea ca PDF sunt incluse în planurile cu plată. Deschideți CompPilot și alegeți un plan pentru a tipări acest raport.",
+  "footer.privacy": "Confidențialitate",
+  "footer.support": "Asistență",
+  "native.purchaseSoon": "Planurile nu pot fi cumpărate încă în această aplicație. Dacă aveți deja un plan, autentificați-vă și va apărea aici.",
+  "account.delete.title": "Ștergeți contul",
+  "account.delete.body": "Aceasta șterge definitiv contul dumneavoastră și toate analizele salvate în el și anulează imediat orice plan cumpărat pe web. Acțiunea nu poate fi anulată. Analizele salvate doar pe acest dispozitiv nu fac parte din contul dumneavoastră.",
+  "account.delete.button": "Ștergeți contul meu",
+  "account.delete.confirm": "Da, ștergeți tot",
+  "account.delete.cancel": "Păstrați contul meu",
+  "account.delete.failed": "Contul nu a putut fi șters și nimic nu a fost modificat. Încercați din nou sau contactați asistența.",
 };
 export default messages;

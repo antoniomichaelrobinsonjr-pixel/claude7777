@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Quand",
   "print.lockedTitle": "L’impression est une fonctionnalité réservée aux membres",
   "print.lockedBody": "L’impression et l’enregistrement en PDF sont inclus dans les formules payantes. Ouvrez CompPilot et choisissez une formule pour imprimer ce rapport.",
+  "footer.privacy": "Confidentialité",
+  "footer.support": "Assistance",
+  "native.purchaseSoon": "Les formules ne peuvent pas encore être achetées dans cette application. Si vous avez déjà une formule, connectez-vous et elle apparaîtra ici.",
+  "account.delete.title": "Supprimer le compte",
+  "account.delete.body": "Cette action supprime définitivement votre compte et toutes les analyses qui y sont enregistrées, et résilie immédiatement toute formule achetée sur le web. Elle est irréversible. Les analyses enregistrées uniquement sur cet appareil ne font pas partie de votre compte.",
+  "account.delete.button": "Supprimer mon compte",
+  "account.delete.confirm": "Oui, tout supprimer",
+  "account.delete.cancel": "Conserver mon compte",
+  "account.delete.failed": "Le compte n’a pas pu être supprimé et rien n’a été modifié. Réessayez ou contactez l’assistance.",
 };
 export default messages;

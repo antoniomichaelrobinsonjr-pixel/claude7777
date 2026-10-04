@@ -77,6 +77,10 @@ The scenarios apply the growth rates the owner chooses to today's indicated valu
 
 **Printing is for paying members.** With billing on, only paid plans (a trial counts) can print or save to PDF: the Print buttons are locks for everyone else, and a browser's own Ctrl/Cmd+P prints only a short notice instead of the analysis or reports. With billing off, printing is open. This is a guard, not copy protection: anything shown on a screen can still be screenshotted or copied.
 
+## App Store and Google Play
+
+The web app is ready to be wrapped for the stores, and the store requirements that can be met in code are met: privacy and support pages, in-app account deletion, and no plan sales inside a store app. The native apps themselves are not built; see [docs/native-apps.md](docs/native-apps.md) for the plan, the review risks and the decisions you need to make (especially how to sell plans through Apple and Google).
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 

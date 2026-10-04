@@ -506,5 +506,14 @@ const messages: Dict = {
   "owner.col.when": "時間",
   "print.lockedTitle": "列印功能僅限會員使用",
   "print.lockedBody": "列印和另存為 PDF 包含於付費方案中。請開啟 CompPilot 並選擇一個方案，以列印此報告。",
+  "footer.privacy": "隱私",
+  "footer.support": "支援",
+  "native.purchaseSoon": "此應用程式暫時無法購買方案。如果您已有方案，請登入，方案將顯示在這裡。",
+  "account.delete.title": "刪除帳號",
+  "account.delete.body": "此操作將永久刪除您的帳號及其中儲存的所有分析，並立即取消您在網頁上購買的所有方案。此操作無法復原。僅儲存在此裝置上的分析不屬於您的帳號。",
+  "account.delete.button": "刪除我的帳號",
+  "account.delete.confirm": "是，刪除所有內容",
+  "account.delete.cancel": "保留我的帳號",
+  "account.delete.failed": "帳號無法刪除，且未做任何變更。請重試，或聯絡支援。",
 };
 export default messages;

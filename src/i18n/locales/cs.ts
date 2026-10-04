@@ -540,5 +540,14 @@ const messages: Dict = {
   "owner.col.when": "Kdy",
   "print.lockedTitle": "Tisk je funkce pro členy",
   "print.lockedBody": "Tisk a ukládání do PDF jsou součástí placených plánů. Otevřete CompPilot a vyberte plán, abyste mohli tuto zprávu vytisknout.",
+  "footer.privacy": "Soukromí",
+  "footer.support": "Podpora",
+  "native.purchaseSoon": "Plány zatím nelze v této aplikaci zakoupit. Pokud už plán máte, přihlaste se a zobrazí se zde.",
+  "account.delete.title": "Smazat účet",
+  "account.delete.body": "Tímto trvale smažete svůj účet i všechny analýzy uložené v něm a okamžitě zrušíte každý plán, který jste koupili na webu. Nelze to vzít zpět. Analýzy uložené pouze v tomto zařízení nejsou součástí vašeho účtu.",
+  "account.delete.button": "Smazat můj účet",
+  "account.delete.confirm": "Ano, smazat vše",
+  "account.delete.cancel": "Ponechat můj účet",
+  "account.delete.failed": "Účet se nepodařilo smazat a nic se nezměnilo. Zkuste to znovu nebo kontaktujte podporu.",
 };
 export default messages;

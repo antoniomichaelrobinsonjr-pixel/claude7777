@@ -523,5 +523,14 @@ const messages: Dict = {
   "owner.col.when": "Mikor",
   "print.lockedTitle": "A nyomtatás tagoknak szóló funkció",
   "print.lockedBody": "A nyomtatás és a PDF-be mentés a fizetős csomagokkal érhető el. Nyissa meg a CompPilot alkalmazást, és válasszon csomagot a jelentés kinyomtatásához.",
+  "footer.privacy": "Adatvédelem",
+  "footer.support": "Támogatás",
+  "native.purchaseSoon": "A csomagok még nem vásárolhatók meg ebben az alkalmazásban. Ha már van csomagja, jelentkezzen be, és itt meg fog jelenni.",
+  "account.delete.title": "Fiók törlése",
+  "account.delete.body": "Ez véglegesen törli a fiókját és a hozzá mentett összes elemzést, és azonnal lemondja a weben vásárolt csomagokat. Nem vonható vissza. A csak ezen az eszközön mentett elemzések nem részei a fiókjának.",
+  "account.delete.button": "Fiókom törlése",
+  "account.delete.confirm": "Igen, minden törlése",
+  "account.delete.cancel": "Fiókom megtartása",
+  "account.delete.failed": "A fiókot nem sikerült törölni, és semmi sem változott. Próbálja újra, vagy forduljon a támogatáshoz.",
 };
 export default messages;
