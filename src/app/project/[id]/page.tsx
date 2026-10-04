@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
 import { useI18n } from "@/i18n";
-import { readMoney, showMoney } from "@/i18n/format";
+import { readMoney, showMoney, type Vars } from "@/i18n/format";
 import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
 import { analyze, exampleData, newComp, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
 
@@ -105,10 +105,11 @@ export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const { t, rich, usd, date } = useI18n();
   const [project, setProject] = useState<Project | null>(null);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<{ kind: "saving" | "saved" | "failed"; message?: string } | null>(null);
   const [missing, setMissing] = useState(false);
   const [removed, setRemoved] = useState<{ comp: Comp; index: number } | null>(null);
-  const [geoStatus, setGeoStatus] = useState("");
+  type GeoStatus = { key: string; vars?: Vars; errorCode?: string; errorStatus?: number };
+  const [geoStatus, setGeoStatus] = useState<GeoStatus | null>(null);
   const [locating, setLocating] = useState(false);
   const [guided, setGuided] = useState(false);
   const [step, setStep] = useState(1);
@@ -128,9 +129,9 @@ export default function ProjectPage() {
   // Debounced autosave.
   useEffect(() => {
     if (!project || !loaded.current) return;
-    setStatus(t("project.saving"));
+    setStatus({ kind: "saving" });
     const timer = setTimeout(() => {
-      saveProject(project).then(() => setStatus(t("project.saved"))).catch((e) => setStatus(t("project.saveFailed", { message: e.message })));
+      saveProject(project).then(() => setStatus({ kind: "saved" })).catch((e) => setStatus({ kind: "failed", message: String(e?.message ?? e) }));
     }, 600);
     return () => clearTimeout(timer);
   }, [project]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -166,7 +167,7 @@ export default function ProjectPage() {
     if (project!.subject.address.trim() && !validGeo(project!.subject.geo, project!.subject.address)) todo.push({ id: null, address: project!.subject.address.trim() });
     for (const c of project!.comps) if (c.address.trim() && !validGeo(c.geo, c.address)) todo.push({ id: c.id, address: c.address.trim() });
     if (todo.length === 0) {
-      setGeoStatus(project!.subject.address.trim() || project!.comps.some((c) => c.address.trim()) ? t("geo.allDone") : t("geo.enterFirst"));
+      setGeoStatus({ key: project!.subject.address.trim() || project!.comps.some((c) => c.address.trim()) ? "geo.allDone" : "geo.enterFirst" });
       return;
     }
     const host = new URL(geocoderUrl).host;
@@ -180,7 +181,7 @@ export default function ProjectPage() {
     let errorStatus = 0;
     for (let i = 0; i < todo.length; i++) {
       const target = todo[i];
-      setGeoStatus(t("geo.progress", { i: i + 1, total: todo.length }));
+      setGeoStatus({ key: "geo.progress", vars: { i: i + 1, total: todo.length } });
       const r = await geocodeAddress(target.address, { baseUrl: process.env.NEXT_PUBLIC_GEOCODER_URL });
       if (r.status === "ok") {
         found++;
@@ -213,10 +214,10 @@ export default function ProjectPage() {
     setLocating(false);
     setGeoStatus(
       stopped
-        ? t("geo.stopped", { message: t(`geo.err.${errorCode}`, { status: errorStatus }), found, total: todo.length })
+        ? { key: "geo.stopped", vars: { found, total: todo.length }, errorCode, errorStatus }
         : failed.length
-          ? t("geo.doneFailed", { found, total: todo.length, list: failed.join("; ") })
-          : t("geo.doneMeasured", { found, total: todo.length }),
+          ? { key: "geo.doneFailed", vars: { found, total: todo.length, list: failed.join("; ") } }
+          : { key: "geo.doneMeasured", vars: { found, total: todo.length } },
     );
   }
 
@@ -242,7 +243,7 @@ export default function ProjectPage() {
         <div className="mt-3 h-px" style={{ background: "linear-gradient(90deg, var(--gold-b), transparent)" }} />
       </header>
       <Link href="/" className="muted tap no-print -ms-1 text-sm hover:underline">{t("app.allAnalyses")}</Link>
-      <h1 className="sr-only">{project.name || t("project.fallbackTitle")}</h1>
+      <h1 className="sr-only"><bdi>{project.name || t("project.fallbackTitle")}</bdi></h1>
       {isBlank && (
         <div className="card no-print flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
           <span>{t("project.blankHint")}</span>
@@ -251,13 +252,13 @@ export default function ProjectPage() {
       )}
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <input
-          className="display w-full max-w-md bg-transparent text-3xl font-bold outline-none focus:underline"
+          dir="auto" className="display w-full max-w-md bg-transparent text-3xl font-bold outline-none focus:underline"
           value={project.name}
           onChange={(e) => set({ name: e.target.value })}
           aria-label={t("project.nameLabel")}
         />
         <div className="flex flex-wrap items-center gap-3">
-          <span className="muted text-sm">{status}</span>
+          <span className="muted text-sm">{status && (status.kind === "saving" ? t("project.saving") : status.kind === "saved" ? t("project.saved") : t("project.saveFailed", { message: status.message ?? "" }))}</span>
           <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
             {guided ? t("project.showAll") : t("project.guideMe")}
           </button>
@@ -269,7 +270,11 @@ export default function ProjectPage() {
         </div>
       </div>
 
-      {geoStatus && <p className="no-print muted text-sm" role="status">{geoStatus}</p>}
+      {geoStatus && (
+        <p className="no-print muted text-sm" role="status">
+          {t(geoStatus.key, geoStatus.errorCode ? { ...geoStatus.vars, message: t(`geo.err.${geoStatus.errorCode}`, { status: geoStatus.errorStatus ?? 0 }) } : geoStatus.vars)}
+        </p>
+      )}
 
       {guided && (
         <nav className="no-print card flex items-center gap-1 p-2" aria-label={t("project.progress")}>
@@ -294,7 +299,7 @@ export default function ProjectPage() {
             <Step n={1} title={t("step1.title")} hint={t("step1.hint")} />
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <label className="field col-span-2 md:col-span-4">{t("field.address")}
-                <input className="input" placeholder={t("field.addressPlaceholder")} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
+                <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
                 {(() => { const g = validGeo(project.subject.geo, project.subject.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
               </label>
               <Num label={t("field.sqft")} value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
@@ -313,7 +318,7 @@ export default function ProjectPage() {
               <Money label={t("rate.year")} value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />
             </div>
             <label className="field mt-3 block">{t("ratesBasis.label")} <span className="font-normal">{t("ratesBasis.hint")}</span>
-              <input className="input" placeholder={t("ratesBasis.placeholder")} value={project.ratesBasis ?? ""} onChange={(e) => set({ ratesBasis: e.target.value })} />
+              <input className="input" dir="auto" placeholder={t("ratesBasis.placeholder")} value={project.ratesBasis ?? ""} onChange={(e) => set({ ratesBasis: e.target.value })} />
             </label>
           </section>
 
@@ -323,7 +328,7 @@ export default function ProjectPage() {
               <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
                 {analysis.rows.map((r) => (
                   <li key={r.comp.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm" style={{ borderColor: "var(--border)" }}>
-                    <span className="truncate">{r.comp.address || t("common.unnamedComp")}</span>
+                    <span className="truncate"><bdi>{r.comp.address || t("common.unnamedComp")}</bdi></span>
                     <span className="muted whitespace-nowrap">{usd(r.comp.salePrice)} <span aria-hidden className="inline-block rtl:-scale-x-100">→</span> <strong style={{ color: "var(--ink)" }}>{usd(r.adjustedPrice)}</strong></span>
                   </li>
                 ))}
@@ -377,7 +382,7 @@ export default function ProjectPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <label className="field col-span-2">{t("field.address")}
-                      <input className="input" placeholder={t("field.addressPlaceholder")} value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
+                      <input className="input" dir="auto" placeholder={t("field.addressPlaceholder")} value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
                       {(() => { const g = validGeo(c.geo, c.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>{t(g.precise ? "geo.matched" : "geo.matchedArea", { label: g.label })}</span> : null; })()}
                     </label>
                     <Money label={t("comp.salePrice")} value={c.salePrice} onChange={(n) => setComp(c.id, { salePrice: n })} />
@@ -391,7 +396,7 @@ export default function ProjectPage() {
                     <Num label={c.distanceComputed ? t("comp.distanceMap") : t("comp.distance")} step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n, distanceComputed: false })} />
                     <Money label={t("comp.otherAdj")} negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
                     <label className="field col-span-2">{t("comp.source")} <span className="font-normal">{t("comp.sourceHint")}</span>
-                      <input className="input" placeholder={t("comp.sourcePlaceholder")} value={c.source ?? ""} onChange={(e) => setComp(c.id, { source: e.target.value })} />
+                      <input className="input" dir="auto" placeholder={t("comp.sourcePlaceholder")} value={c.source ?? ""} onChange={(e) => setComp(c.id, { source: e.target.value })} />
                     </label>
                   </div>
                   {c.included && c.salePrice <= 0 && (
@@ -442,9 +447,9 @@ export default function ProjectPage() {
                 <RangeBar a={analysis} />
                 <dl className="grid grid-cols-3 gap-2 px-5 pb-5 text-center">
                   {([["result.low", analysis.low], ["result.median", analysis.median], ["result.high", analysis.high]] as const).map(([l, v]) => (
-                    <div key={l} className="rounded-xl p-2" style={{ background: "var(--surface-2)" }}>
+                    <div key={l} className="min-w-0 rounded-xl p-2" style={{ background: "var(--surface-2)" }}>
                       <dt className="muted text-xs font-semibold uppercase">{t(l)}</dt>
-                      <dd className="text-sm font-bold">{usd(v)}</dd>
+                      <dd className="whitespace-nowrap text-[13px] font-bold sm:text-sm" dir="ltr">{usd(v)}</dd>
                     </div>
                   ))}
                 </dl>

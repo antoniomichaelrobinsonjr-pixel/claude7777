@@ -24,7 +24,7 @@ function Logo() {
         </g>
         <path d="M256 252 296 322 256 304 216 322Z" fill="url(#lm-metal)" />
       </svg>
-      <span className="text-lg font-bold tracking-tight" translate="no">CompPilot</span>
+      <span className="hidden text-lg font-bold tracking-tight min-[480px]:inline" translate="no">CompPilot</span>
     </span>
   );
 }
@@ -33,14 +33,14 @@ export default function Header() {
   const { t, locale, locales, setLocale } = useI18n();
   return (
     <header className="no-print sticky top-0 z-10 border-b backdrop-blur" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 80%, transparent)" }}>
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
         <a href="/" aria-label="CompPilot"><Logo /></a>
-        <div className="flex items-center gap-2">
-          <label className="relative flex items-center">
+        <div className="flex min-w-0 items-center gap-2">
+          <label className="relative flex min-w-0 items-center">
             <span className="sr-only">{t("lang.label")}</span>
             <span aria-hidden className="pointer-events-none absolute start-3 text-sm">🌐</span>
             <select
-              className="input !mt-0 !w-auto max-w-[9.5rem] cursor-pointer !py-2 !ps-9 text-sm font-semibold sm:max-w-none"
+              className="input !mt-0 !w-auto max-w-[8.5rem] cursor-pointer !py-2 !ps-9 text-sm font-semibold sm:max-w-none"
               value={locale}
               onChange={(e) => setLocale(e.target.value)}
               translate="no"
@@ -50,7 +50,7 @@ export default function Header() {
               ))}
             </select>
           </label>
-          <a href="/login" className="btn">{t("app.account")}</a>
+          <a href="/login" className="btn !px-3">{t("app.account")}</a>
         </div>
       </div>
     </header>

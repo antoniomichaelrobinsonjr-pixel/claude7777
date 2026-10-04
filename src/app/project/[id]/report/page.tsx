@@ -72,10 +72,10 @@ export default function ReportPage() {
       <div className="no-print card flex flex-wrap items-end gap-3 p-4">
         <Link href={`/project/${project.id}`} className="btn">{t("report.back")}</Link>
         <label className="field min-w-40 flex-1">{t("report.preparedForField")}
-          <input className="input" value={project.preparedFor ?? ""} onChange={(e) => update({ preparedFor: e.target.value })} onBlur={() => saveProject(project)} />
+          <input className="input" dir="auto" value={project.preparedFor ?? ""} onChange={(e) => update({ preparedFor: e.target.value })} onBlur={() => saveProject(project)} />
         </label>
         <label className="field min-w-40 flex-1">{t("report.preparedByField")}
-          <input className="input" value={project.preparedBy ?? ""} onChange={(e) => update({ preparedBy: e.target.value })} onBlur={() => saveProject(project)} />
+          <input className="input" dir="auto" value={project.preparedBy ?? ""} onChange={(e) => update({ preparedBy: e.target.value })} onBlur={() => saveProject(project)} />
         </label>
         <button className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</button>
       </div>
@@ -101,7 +101,7 @@ export default function ReportPage() {
 
       <header>
         <div className="muted text-xs font-semibold uppercase tracking-widest"><span translate="no">CompPilot</span> · {t("report.kind")}</div>
-        <h1 className="display mt-1 text-4xl font-bold">{project.subject.address || project.name}</h1>
+        <h1 className="display mt-1 text-4xl font-bold"><bdi>{project.subject.address || project.name}</bdi></h1>
         <p className="muted mt-1 text-sm">{byline}</p>
         <div className="mt-3 h-px" style={{ background: "linear-gradient(90deg, var(--gold-b), transparent)" }} />
       </header>
@@ -178,7 +178,7 @@ export default function ReportPage() {
                   {report.comps.map((c) => (
                     <tr key={c.id} className="border-t align-top" style={{ borderColor: "var(--border)" }}>
                       <td className="py-3 pe-3">
-                        <div className="font-semibold">{nameOf(c.address)}</div>
+                        <div className="font-semibold"><bdi>{nameOf(c.address)}</bdi></div>
                         {c.source && <div className="muted text-xs">{t("table.source", { source: c.source })}</div>}
                         {c.flags.length > 0 && <div className="mt-1 text-xs" style={{ color: "var(--warn)" }}>{c.flags.map((f) => tm(f)).join(" · ")}</div>}
                       </td>
@@ -217,11 +217,11 @@ export default function ReportPage() {
                     </thead>
                     <tbody>
                       {report.subjectGeo && (
-                        <tr className="border-t" style={{ borderColor: "var(--border)" }}><td className="py-1 pe-3">S</td><td className="pe-3">{project.subject.address}</td><td className="pe-3">{report.subjectGeo.label}</td><td className="text-end">—</td></tr>
+                        <tr className="border-t" style={{ borderColor: "var(--border)" }}><td className="py-1 pe-3">S</td><td className="pe-3"><bdi>{project.subject.address}</bdi></td><td className="pe-3">{report.subjectGeo.label}</td><td className="text-end">—</td></tr>
                       )}
                       {report.comps.map((c, i) => (
                         <tr key={c.id} className="border-t" style={{ borderColor: "var(--border)" }}>
-                          <td className="py-1 pe-3">{num(n.int(i + 1))}</td><td className="pe-3">{nameOf(c.address)}</td>
+                          <td className="py-1 pe-3">{num(n.int(i + 1))}</td><td className="pe-3"><bdi>{nameOf(c.address)}</bdi></td>
                           <td className="pe-3">{c.geo ? `${c.geo.label}${c.geo.precise ? "" : t("map.areaOnly")}` : t("map.notLocatedCell")}</td>
                           <td className="text-end">{c.mapDistanceMi === null ? "—" : mi(c.mapDistanceMi, "dec2")}</td>
                         </tr>
@@ -256,7 +256,7 @@ export default function ReportPage() {
                 <tbody>
                   {analysis.rows.map((r) => (
                     <tr key={r.comp.id} className="border-t" style={{ borderColor: "var(--border)" }}>
-                      <td className="py-2 pe-3">{nameOf(r.comp.address)}</td>
+                      <td className="py-2 pe-3"><bdi>{nameOf(r.comp.address)}</bdi></td>
                       <td className="pe-3 text-end" dir="ltr">{signed(r.sqftAdj)}</td><td className="pe-3 text-end" dir="ltr">{signed(r.bedAdj)}</td>
                       <td className="pe-3 text-end" dir="ltr">{signed(r.bathAdj)}</td><td className="pe-3 text-end" dir="ltr">{signed(r.ageAdj)}</td>
                       <td className="pe-3 text-end" dir="ltr">{signed(r.comp.otherAdj)}</td><td className="text-end font-semibold" dir="ltr">{signed(r.netAdj)}</td>

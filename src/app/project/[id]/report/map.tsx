@@ -38,6 +38,7 @@ function popup(lines: { text: string; bold?: boolean; muted?: boolean }[], dir: 
   el.style.cssText = "font:13px/1.4 system-ui,sans-serif;min-width:160px";
   for (const l of lines) {
     const d = document.createElement("div");
+    d.dir = "auto";
     d.textContent = l.text;
     if (l.bold) d.style.fontWeight = "700";
     if (l.muted) d.style.opacity = "0.7";

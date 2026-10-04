@@ -19,6 +19,8 @@ export const msg = (key: string, vars?: Vars): Msg => ({ key, vars });
 
 /** Always Western digits (0-9) so prices read the same everywhere and can be pasted into other tools. */
 const tagOf = (intl: string) => `${intl}-u-nu-latn`;
+/** Dates use the Gregorian calendar everywhere (Thai, Persian and some Arabic locales default to other calendars), so a report date is unambiguous to any reader. */
+const dateTagOf = (intl: string) => `${intl}-u-ca-gregory-nu-latn`;
 
 const cache = new Map<string, Intl.NumberFormat>();
 function nf(intl: string, opts: Intl.NumberFormatOptions): Intl.NumberFormat {
@@ -33,7 +35,8 @@ export function formatNum(intl: string, x: Num): string {
     case "int": return nf(intl, { maximumFractionDigits: 0 }).format(x.v);
     case "dec1": return nf(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(x.v);
     case "dec2": return nf(intl, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(x.v);
-    case "usd": return nf(intl, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(x.v);
+    // Some locales (e.g. Arabic) still print "US$"; the app is US-dollar only, so always use the plain sign.
+    case "usd": return nf(intl, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).formatToParts(x.v).map((p) => (p.type === "currency" ? "$" : p.value)).join("");
     case "pct1": return nf(intl, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(x.v / 100);
     case "pct0": return nf(intl, { style: "percent", maximumFractionDigits: 0 }).format(x.v / 100);
   }
@@ -42,7 +45,7 @@ export function formatNum(intl: string, x: Num): string {
 export const usdIn = (intl: string, v: number) => formatNum(intl, n.usd(v));
 
 export function formatDate(intl: string, d: Date | number, opts: Intl.DateTimeFormatOptions = { year: "numeric", month: "long", day: "numeric" }): string {
-  return new Intl.DateTimeFormat(tagOf(intl), opts).format(d);
+  return new Intl.DateTimeFormat(dateTagOf(intl), opts).format(d);
 }
 
 export type Dict = Record<string, string>;
@@ -70,9 +73,11 @@ export function translate(messages: Dict, fallback: Dict, intl: string, key: str
   return template.replace(/\{(\w+)\}/g, (_, name: string) => {
     const v = vars?.[name];
     if (v === undefined) return "";
-    if (typeof v === "string") return v;
+    // Inserted values are wrapped in Unicode "isolates" so a name, address or number keeps its own direction
+    // inside the sentence (an English address in an Arabic sentence, or the reverse). Invisible in left-to-right text.
+    if (typeof v === "string") return `\u2068${v}\u2069`;
     if (typeof v === "number") return nf(intl, { maximumFractionDigits: 2 }).format(v);
-    return formatNum(intl, v);
+    return `\u2068${formatNum(intl, v)}\u2069`;
   });
 }
 

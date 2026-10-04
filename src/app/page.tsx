@@ -59,8 +59,8 @@ export default function Home() {
             return (
               <li key={p.id} className="card group flex flex-col justify-between gap-4 p-5 transition hover:-translate-y-0.5">
                 <a href={`/project/${p.id}`} className="space-y-1">
-                  <div className="font-semibold group-hover:underline">{p.name}</div>
-                  <div className="muted truncate text-sm">{p.subject.address || t("home.noAddress")}</div>
+                  <div className="font-semibold group-hover:underline"><bdi>{p.name}</bdi></div>
+                  <div className="muted truncate text-sm"><bdi>{p.subject.address || t("home.noAddress")}</bdi></div>
                   <div className="pt-2 text-2xl font-bold" style={{ color: a.count ? "var(--ink)" : "var(--muted)" }}>
                     {a.count ? usd(a.weighted) : "—"}
                   </div>

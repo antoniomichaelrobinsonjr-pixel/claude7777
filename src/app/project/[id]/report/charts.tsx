@@ -93,7 +93,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
           >
             <div dir={info.dir}>
               <div className="text-base font-bold">{t("chart.perSqft", { price: usd(hovered.ppsf) })}</div>
-              <div className="muted">{hovered.address || t("common.unnamedComp")}</div>
+              <div className="muted"><bdi>{hovered.address || t("common.unnamedComp")}</bdi></div>
               <div className="muted">{t("chart.sold", { date: dateFull(hovered.ts) })}</div>
             </div>
           </div>
@@ -120,7 +120,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
           <tbody>
             {pts.map((p) => (
               <tr key={p.id} className="border-t" style={{ borderColor: "var(--border)" }}>
-                <td className="py-1 pe-3">{p.address || t("common.unnamedComp")}</td><td className="pe-3">{dateFull(p.ts)}</td><td className="text-end">{usd(p.ppsf)}</td>
+                <td className="py-1 pe-3"><bdi>{p.address || t("common.unnamedComp")}</bdi></td><td className="pe-3">{dateFull(p.ts)}</td><td className="text-end">{usd(p.ppsf)}</td>
               </tr>
             ))}
           </tbody>
@@ -145,7 +145,7 @@ export function DistanceBars({ comps }: { comps: CompEvidence[] }) {
       <div className="grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-x-3 gap-y-2 text-sm sm:grid-cols-[minmax(0,12rem)_1fr]">
         {withDist.map((c) => (
           <div key={c.id} className="contents">
-            <div className="truncate" title={c.address}>{c.address || t("common.unnamedComp")}</div>
+            <div className="truncate" title={c.address}><bdi>{c.address || t("common.unnamedComp")}</bdi></div>
             <div className="relative h-6" tabIndex={0} role="img" title={t("distance.barAria", { address: c.address || t("common.unnamedComp"), miles: num(n.dec1(c.distanceMi!)) })} aria-label={t("distance.barAria", { address: c.address || t("common.unnamedComp"), miles: num(n.dec1(c.distanceMi!)) })}>
               <div
                 className="absolute start-0 top-1 h-4 transition hover:brightness-110"
@@ -171,7 +171,7 @@ export function DistanceBars({ comps }: { comps: CompEvidence[] }) {
           <thead className="muted text-xs uppercase"><tr><th className="py-1 pe-3 text-start">{t("col.property")}</th><th className="text-end">{t("col.miles")}</th></tr></thead>
           <tbody>
             {withDist.map((c) => (
-              <tr key={c.id} className="border-t" style={{ borderColor: "var(--border)" }}><td className="py-1 pe-3">{c.address || t("common.unnamedComp")}</td><td className="text-end">{num(n.dec1(c.distanceMi!))}</td></tr>
+              <tr key={c.id} className="border-t" style={{ borderColor: "var(--border)" }}><td className="py-1 pe-3"><bdi>{c.address || t("common.unnamedComp")}</bdi></td><td className="text-end">{num(n.dec1(c.distanceMi!))}</td></tr>
             ))}
           </tbody>
         </table>
