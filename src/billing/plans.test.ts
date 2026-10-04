@@ -69,12 +69,19 @@ test("comp limit: extra comps are held back, never deleted, and the original is 
   assert.equal(lockedCompCount(p, "plus"), 0);
 });
 
-test("comp limit counts only comps the person has switched on", () => {
+test("the comp limit counts every comp by position, like the database does, so unticking a comp doesn't dodge it", () => {
   const p = project(6);
-  p.comps[1].included = false; // 5 included, limit 4 -> 1 locked
+  p.comps[1].included = false;
+  // limit 4 -> positions 4 and 5 are beyond it, whether or not earlier comps are ticked
+  const limited = applyPlan(p, "starter");
+  assert.equal(limited.comps[1].included, false);
+  assert.equal(limited.comps[3].included, true);
+  assert.equal(limited.comps[4].included, false);
+  assert.equal(limited.comps[5].included, false);
+  assert.equal(lockedCompCount(p, "starter"), 2);
+  // a comp beyond the limit that was already switched off is not counted as "held back"
+  p.comps[5].included = false;
   assert.equal(lockedCompCount(p, "starter"), 1);
-  assert.equal(applyPlan(p, "starter").comps[5].included, false);
-  assert.equal(applyPlan(p, "starter").comps[1].included, false);
 });
 
 test("analysis and comp creation limits", () => {

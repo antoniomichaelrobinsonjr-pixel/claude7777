@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import RegisterSW from "./register-sw";
 import Header from "./header";
 import { I18nProvider } from "@/i18n";
+import { EntitlementsProvider } from "@/billing/entitlements";
 
 export const metadata: Metadata = {
   title: "CompPilot",
@@ -25,8 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <RegisterSW />
         <I18nProvider>
-          <Header />
-          <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+          <EntitlementsProvider>
+            <Header />
+            <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+          </EntitlementsProvider>
         </I18nProvider>
       </body>
     </html>

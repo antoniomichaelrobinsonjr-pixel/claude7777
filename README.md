@@ -35,6 +35,22 @@ Other languages: browsers' built-in page translation still works because every p
 2. To add a language, add it to `LOCALES` in `src/i18n/locales.ts` (code, native name, BCP-47 tag, direction), add a loader line in `src/i18n/loaders.ts`, and create `src/i18n/locales/<code>.ts` with every key.
 3. Plural keys end in `.one`/`.other` (and `.few`, `.many`, `.two`, `.zero` where the language needs them). `npm test` fails with a precise list until a language file is complete and well-formed.
 
+## Membership (Free / Plus / Pro / Studio)
+
+Four tiers, billed weekly, monthly or yearly. **Billing is off by default**: until you enable it, every feature is unlocked and nothing is limited. All limits and prices live in `src/billing/plans.ts`, which drives the gating, the pricing page and the tests. Comps beyond a plan's limit are held back, never deleted, and limitations and disclaimers are never gated.
+
+To switch it on:
+
+1. Use Supabase with auth, then run `supabase/billing.sql` after `supabase/schema.sql`. It adds `profiles` and a trigger that enforces the limits in the database.
+2. In Stripe, create a product per paid plan with weekly, monthly and yearly recurring prices. Put the nine price ids in the `STRIPE_PRICE_<PLAN>_<INTERVAL>` variables.
+3. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` (server only) and `NEXT_PUBLIC_SITE_URL`.
+4. Add a Stripe webhook to `/api/billing/webhook` for `customer.subscription.created/updated/deleted` and `checkout.session.completed`. Configure the Stripe customer portal.
+5. Set `NEXT_PUBLIC_BILLING_ENABLED=true`.
+
+`NEXT_PUBLIC_BILLING_PREVIEW=1` lets anyone pick a plan on `/pricing` for demos. Never set it in production.
+
+Checkout, webhook and database rules are tested offline (fake Stripe events, real Postgres via PGlite). They have not been run against live Stripe.
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 

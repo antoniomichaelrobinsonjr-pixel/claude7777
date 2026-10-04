@@ -4,6 +4,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
 import { useI18n } from "@/i18n";
+import { useEntitlements } from "@/billing/entitlements";
+import { GatedButton } from "@/billing/ui";
 import { readMoney, showMoney, type Vars } from "@/i18n/format";
 import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
 import { analyze, exampleData, newComp, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
@@ -104,6 +106,7 @@ const STEP_KEYS = ["steps.subject", "steps.rates", "steps.comps", "steps.result"
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const { t, rich, usd, date } = useI18n();
+  const ent = useEntitlements();
   const [project, setProject] = useState<Project | null>(null);
   const [status, setStatus] = useState<{ kind: "saving" | "saved" | "failed"; message?: string } | null>(null);
   const [missing, setMissing] = useState(false);
@@ -136,7 +139,7 @@ export default function ProjectPage() {
     return () => clearTimeout(timer);
   }, [project]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const analysis = useMemo(() => (project ? analyze(project) : null), [project]);
+  const analysis = useMemo(() => (project ? analyze(ent.apply(project)) : null), [project, ent]);
 
   if (missing) {
     return (
@@ -149,6 +152,10 @@ export default function ProjectPage() {
   }
   if (!project || !analysis) return <p className="muted">{t("common.loading")}</p>;
 
+  const effective = ent.apply(project);
+  const heldBack = (id: string) => !!project.comps.find((c) => c.id === id)?.included && !effective.comps.find((c) => c.id === id)?.included;
+  const lockedCount = ent.lockedComps(project);
+  const atCompLimit = !ent.canAddComp(project.comps.length);
   const isBlank = isBlankProject(project);
   // In guided mode only the current step shows; printing always shows everything.
   const show = (n: number) => (!guided || step === n ? "" : "hidden print:block");
@@ -258,15 +265,15 @@ export default function ProjectPage() {
           aria-label={t("project.nameLabel")}
         />
         <div className="flex flex-wrap items-center gap-3">
-          <span className="muted text-sm">{status && (status.kind === "saving" ? t("project.saving") : status.kind === "saved" ? t("project.saved") : t("project.saveFailed", { message: status.message ?? "" }))}</span>
+          <span className="muted text-sm">{status && (status.kind === "saving" ? t("project.saving") : status.kind === "saved" ? t("project.saved") : status.message?.includes("plan_limit") ? t("billing.saveLimit") : t("project.saveFailed", { message: status.message ?? "" }))}</span>
           <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
             {guided ? t("project.showAll") : t("project.guideMe")}
           </button>
-          <button onClick={locateAll} disabled={locating} className="btn" title={t("project.locateTitle")}>
+          <GatedButton allowed={ent.can("addressLookup")} feature="addressLookup" onClick={locateAll} disabled={locating} title={t("project.locateTitle")}>
             {locating ? t("project.locating") : t("project.locate")}
-          </button>
-          <Link href={`/project/${project.id}/report`} className="btn">{t("project.investorReport")}</Link>
-          <button onClick={() => window.print()} className="btn">{t("common.print")}</button>
+          </GatedButton>
+          <GatedButton allowed={ent.can("report")} feature="report" href={`/project/${project.id}/report`}>{t("project.investorReport")}</GatedButton>
+          <GatedButton allowed={ent.can("printSummary")} feature="printSummary" onClick={() => window.print()}>{t("common.print")}</GatedButton>
         </div>
       </div>
 
@@ -340,8 +347,17 @@ export default function ProjectPage() {
           <section className={`space-y-3 ${show(3)}`}>
             <div className="flex items-center justify-between">
               <Step n={3} title={t("step3.title")} hint={t("step3.hint")} />
-              <button className="btn btn-primary no-print" onClick={() => set({ comps: [...project.comps, newComp()] })}>{t("comp.add")}</button>
+              <button className="btn btn-primary no-print" disabled={atCompLimit} title={atCompLimit ? t("billing.limit.comps", { count: ent.maxComps }) : undefined} onClick={() => set({ comps: [...project.comps, newComp()] })}>{t("comp.add")}</button>
             </div>
+            {lockedCount > 0 && (
+              <div className="card no-print flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm" role="note" style={{ borderColor: "var(--warn)" }}>
+                <span>🔒 {t("billing.lockedComps", { count: lockedCount })}</span>
+                <Link href="/pricing" className="btn !py-1.5 text-sm">{t("billing.seePlans")}</Link>
+              </div>
+            )}
+            {atCompLimit && lockedCount === 0 && ent.billingEnabled && (
+              <p className="no-print muted text-sm" role="note">{t("billing.limit.comps", { count: ent.maxComps })}</p>
+            )}
             {removed && (
               <div className="card no-print flex items-center justify-between gap-3 px-4 py-2 text-sm">
                 <span>{t("comp.removed")}</span>
@@ -363,9 +379,9 @@ export default function ProjectPage() {
             {project.comps.map((c, i) => {
               const row = analysis.rows.find((r) => r.comp.id === c.id);
               return (
-                <div key={c.id} className="card p-5 transition" style={{ opacity: c.included ? 1 : 0.55 }}>
+                <div key={c.id} className="card p-5 transition" style={c.included && !heldBack(c.id) ? undefined : { borderStyle: "dashed", background: "var(--surface-2)" }}>
                   <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-semibold">{t("comp.n", { n: i + 1 })}</span>
+                    <span className="text-sm font-semibold">{t("comp.n", { n: i + 1 })}{heldBack(c.id) && <span className="ms-2 font-normal" style={{ color: "var(--warn)" }}>🔒 {t("billing.compHeldBack")}</span>}</span>
                     <div className="no-print flex items-center gap-4 text-sm">
                       <label className="tap flex items-center gap-2">
                         <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> {t("common.use")}
@@ -399,7 +415,7 @@ export default function ProjectPage() {
                       <input className="input" dir="auto" placeholder={t("comp.sourcePlaceholder")} value={c.source ?? ""} onChange={(e) => setComp(c.id, { source: e.target.value })} />
                     </label>
                   </div>
-                  {c.included && c.salePrice <= 0 && (
+                  {c.included && !heldBack(c.id) && c.salePrice <= 0 && (
                     <p className="mt-4 text-sm" style={{ color: "var(--warn)" }}>{t("comp.needPrice")}</p>
                   )}
                   {row && (
@@ -427,7 +443,7 @@ export default function ProjectPage() {
                   {step === 3 ? t("common.seeResult") : t("common.next")}
                 </button>
               ) : (
-                <button className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</button>
+                <GatedButton allowed={ent.can("printSummary")} feature="printSummary" className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</GatedButton>
               )}
             </div>
           )}

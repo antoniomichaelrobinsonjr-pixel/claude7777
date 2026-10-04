@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/i18n";
+import { safeNext } from "@/lib/safe-next";
 
 export default function Login() {
   const { t, rich } = useI18n();
@@ -27,7 +28,7 @@ export default function Login() {
     const { error } = await fn.call(supabase!.auth, { email, password });
     if (error) return setMsg(error.message);
     if (mode === "up") return setMsg(t("login.checkEmail"));
-    location.href = "/";
+    location.href = safeNext(new URLSearchParams(location.search).get("next"));
   }
 
   if (user)

@@ -81,24 +81,22 @@ export function yearlySavingsPct(plan: PlanId): number | null {
 }
 
 /**
- * Apply a plan's comp limit to an analysis without deleting anything: comps beyond the limit stay saved but are
- * excluded from the value until the person upgrades (or removes some). Returns the same object when nothing changes.
+ * Apply a plan's comp limit without deleting anything. The limit counts every comp in the analysis (switched on or
+ * not, the same rule the database enforces), so comps in positions beyond it stay saved but are left out of the value
+ * until the person upgrades or removes some. Returns the same object when nothing changes.
  */
 export function applyPlan(project: Project, plan: PlanId): Project {
   const max = PLANS[plan].maxComps;
-  let seen = 0;
   let changed = false;
-  const comps = project.comps.map((c) => {
-    if (!c.included) return c;
-    seen++;
-    if (seen <= max) return c;
+  const comps = project.comps.map((c, i) => {
+    if (i < max || !c.included) return c;
     changed = true;
     return { ...c, included: false };
   });
   return changed ? { ...project, comps } : project;
 }
 
-/** How many included comps are being held back by the plan limit. */
+/** How many switched-on comps are being held back by the plan limit. */
 export function lockedCompCount(project: Project, plan: PlanId): number {
   return project.comps.filter((c) => c.included).length - applyPlan(project, plan).comps.filter((c) => c.included).length;
 }

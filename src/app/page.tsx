@@ -4,18 +4,25 @@ import { useRouter } from "next/navigation";
 import { deleteProject, listProjects, saveProject } from "@/lib/storage";
 import { analyze, newProject, type Project } from "@/lib/comps";
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 import { useI18n } from "@/i18n";
+import { useEntitlements } from "@/billing/entitlements";
+import { PLANS } from "@/billing/plans";
 
 export default function Home() {
   const router = useRouter();
   const { t, rich, usd } = useI18n();
+  const ent = useEntitlements();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState("");
 
   const load = () => listProjects().then(setProjects).catch((e) => setError(String(e.message ?? e)));
   useEffect(() => { load(); }, []);
 
+  const atLimit = projects !== null && !ent.canCreate(projects.length);
+
   async function create() {
+    if (atLimit) return;
     const p = newProject(t("name.untitled"));
     await saveProject(p);
     router.push(`/project/${p.id}`);
@@ -33,7 +40,8 @@ export default function Home() {
           </h1>
           <p className="muted text-lg">{t("home.subtitle")}</p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <button onClick={create} className="btn btn-primary">{t("home.newAnalysis")}</button>
+            <button onClick={create} disabled={atLimit} className="btn btn-primary">{t("home.newAnalysis")}</button>
+            {ent.billingEnabled && <Link href="/pricing" className="btn">{t("nav.pricing")}</Link>}
           </div>
         </div>
         <svg className="pointer-events-none absolute -end-6 -top-6 hidden opacity-25 dark:opacity-[0.12] md:block rtl:-scale-x-100" width="360" height="360" viewBox="0 0 512 512" aria-hidden>
@@ -49,13 +57,19 @@ export default function Home() {
         </p>
       )}
       {error && <p style={{ color: "var(--danger)" }}>{error}</p>}
+      {atLimit && (
+        <p className="card flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm" role="note" style={{ borderColor: "var(--warn)" }}>
+          <span>🔒 {t("billing.limit.analyses", { count: PLANS[ent.planId].maxAnalyses ?? 0 })}</span>
+          <Link href="/pricing" className="btn !py-1.5 text-sm">{t("billing.seePlans")}</Link>
+        </p>
+      )}
 
       <section className="space-y-3">
         <h2 className="display text-2xl font-semibold">{t("home.yourAnalyses")}</h2>
         {projects?.length === 0 && <div className="card muted p-8 text-center">{t("home.none")}</div>}
         <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects?.map((p) => {
-            const a = analyze(p);
+            const a = analyze(ent.apply(p));
             return (
               <li key={p.id} className="card group flex flex-col justify-between gap-4 p-5 transition hover:-translate-y-0.5">
                 <a href={`/project/${p.id}`} className="space-y-1">

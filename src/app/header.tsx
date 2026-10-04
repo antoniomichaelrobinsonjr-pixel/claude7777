@@ -1,5 +1,6 @@
 "use client";
 import { useI18n } from "@/i18n";
+import { useEntitlements } from "@/billing/entitlements";
 
 const PIN = "M256 66c-92 0-162 68-162 154 0 112 162 232 162 232s162-120 162-232c0-86-70-154-162-154Z";
 
@@ -31,6 +32,7 @@ function Logo() {
 
 export default function Header() {
   const { t, locale, locales, setLocale } = useI18n();
+  const ent = useEntitlements();
   return (
     <header className="no-print sticky top-0 z-10 border-b backdrop-blur" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 80%, transparent)" }}>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
@@ -50,6 +52,22 @@ export default function Header() {
               ))}
             </select>
           </label>
+          {ent.billingEnabled && (
+            <>
+              <a href="/pricing" className="btn !px-3 hidden sm:inline-flex">{t("nav.pricing")}</a>
+              {!ent.loading && (
+                <a
+                  href="/pricing"
+                  className="hidden rounded-full px-3 py-1 text-xs font-semibold md:inline-block"
+                  style={{ background: "var(--surface-2)", color: "var(--accent)" }}
+                  aria-label={t("billing.yourPlan", { plan: t(`plan.${ent.planId}.name`) })}
+                  data-testid="plan-badge"
+                >
+                  {t(`plan.${ent.planId}.name`)}
+                </a>
+              )}
+            </>
+          )}
           <a href="/login" className="btn !px-3">{t("app.account")}</a>
         </div>
       </div>
