@@ -220,7 +220,7 @@ export const en: Record<string, string> = {
   "col.beds": "Beds",
   "col.baths": "Baths",
   "col.age": "Age",
-  "col.other": "Other",
+  "col.extra": "Other",
   "col.net": "Net",
   "table.source": "Source: {source}",
   "table.futureDate": "Future date",

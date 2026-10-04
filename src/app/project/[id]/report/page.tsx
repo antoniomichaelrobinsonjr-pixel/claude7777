@@ -250,7 +250,7 @@ export default function ReportPage() {
                 <thead className="muted text-xs uppercase">
                   <tr>
                     <th className="py-2 pe-3 text-start">{t("col.property")}</th><th className="pe-3 text-end">{t("col.size")}</th><th className="pe-3 text-end">{t("col.beds")}</th>
-                    <th className="pe-3 text-end">{t("col.baths")}</th><th className="pe-3 text-end">{t("col.age")}</th><th className="pe-3 text-end">{t("col.other")}</th><th className="text-end">{t("col.net")}</th>
+                    <th className="pe-3 text-end">{t("col.baths")}</th><th className="pe-3 text-end">{t("col.age")}</th><th className="pe-3 text-end">{t("col.extra")}</th><th className="text-end">{t("col.net")}</th>
                   </tr>
                 </thead>
                 <tbody>

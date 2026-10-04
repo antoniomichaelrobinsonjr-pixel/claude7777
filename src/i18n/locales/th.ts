@@ -200,7 +200,7 @@ const messages: Dict = {
   "col.beds": "นอน",
   "col.baths": "น้ำ",
   "col.age": "อายุ",
-  "col.other": "อื่นๆ",
+  "col.extra": "อื่นๆ",
   "col.net": "สุทธิ",
   "table.source": "แหล่งที่มา: {source}",
   "table.futureDate": "วันที่ในอนาคต",
