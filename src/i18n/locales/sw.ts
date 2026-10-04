@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Thamani kwa mwaka kuanzia {from} hadi {to}. Baada ya miaka iliyoonyeshwa, hali ya chini, ya kati na ya juu zinafikia {low}, {mid} na {high}.",
   "owner.chart.tableAria": "Thamani kwa mwaka",
   "owner.col.when": "Lini",
+  "print.lockedTitle": "Kuchapisha ni kipengele cha wanachama",
+  "print.lockedBody": "Kuchapisha na kuhifadhi kama PDF kunapatikana kwenye mipango ya kulipia. Fungua CompPilot na uchague mpango ili uchapishe ripoti hii.",
 };
 export default messages;

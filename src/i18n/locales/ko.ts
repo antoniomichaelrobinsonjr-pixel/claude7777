@@ -504,5 +504,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from}년부터 {to}년까지 연도별 가치. 표시된 연수 이후 낮은, 중간, 높은 시나리오는 각각 {low}, {mid}, {high}에 이릅니다.",
   "owner.chart.tableAria": "연도별 가치",
   "owner.col.when": "시기",
+  "print.lockedTitle": "인쇄는 회원 전용 기능입니다",
+  "print.lockedBody": "인쇄와 PDF 저장은 유료 요금제에 포함되어 있습니다. 이 보고서를 인쇄하려면 CompPilot을 열어 요금제를 선택하세요.",
 };
 export default messages;

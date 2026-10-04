@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Wert pro Jahr von {from} bis {to}. Nach den angezeigten Jahren erreichen das niedrige, mittlere und hohe Szenario {low}, {mid} und {high}.",
   "owner.chart.tableAria": "Wert pro Jahr",
   "owner.col.when": "Wann",
+  "print.lockedTitle": "Drucken ist eine Mitgliederfunktion",
+  "print.lockedBody": "Drucken und Speichern als PDF sind in den kostenpflichtigen Tarifen enthalten. Öffnen Sie CompPilot und wählen Sie einen Tarif, um diesen Bericht zu drucken.",
 };
 export default messages;

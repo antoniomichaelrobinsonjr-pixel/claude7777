@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Värde per år från {from} till {to}. Efter de år som visas når det låga, det mellersta och det höga scenariot {low}, {mid} och {high}.",
   "owner.chart.tableAria": "Värde per år",
   "owner.col.when": "När",
+  "print.lockedTitle": "Utskrift är en medlemsfunktion",
+  "print.lockedBody": "Utskrift och sparande som PDF ingår i de betalda planerna. Öppna CompPilot och välj en plan för att skriva ut den här rapporten.",
 };
 export default messages;

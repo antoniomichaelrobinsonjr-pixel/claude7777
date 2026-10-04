@@ -538,5 +538,7 @@ const messages: Dict = {
   "owner.chart.aria": "שווי לפי שנה מ-{from} עד {to}. אחרי השנים המוצגות מגיעים התרחישים הנמוך, הבינוני והגבוה ל-{low}, ל-{mid} ול-{high}.",
   "owner.chart.tableAria": "שווי לפי שנה",
   "owner.col.when": "מתי",
+  "print.lockedTitle": "הדפסה היא תכונה לחברים",
+  "print.lockedBody": "הדפסה ושמירה כ-PDF כלולות בתוכניות בתשלום. פתחו את CompPilot ובחרו תוכנית כדי להדפיס את הדוח הזה.",
 };
 export default messages;

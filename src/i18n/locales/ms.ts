@@ -504,5 +504,7 @@ const messages: Dict = {
   "owner.chart.aria": "Nilai mengikut tahun dari {from} hingga {to}. Selepas tahun yang dipaparkan, senario rendah, sederhana dan tinggi mencapai {low}, {mid} dan {high}.",
   "owner.chart.tableAria": "Nilai mengikut tahun",
   "owner.col.when": "Bila",
+  "print.lockedTitle": "Cetakan ialah ciri untuk ahli",
+  "print.lockedBody": "Cetakan dan simpanan PDF disertakan dalam pelan berbayar. Buka CompPilot dan pilih pelan untuk mencetak laporan ini.",
 };
 export default messages;

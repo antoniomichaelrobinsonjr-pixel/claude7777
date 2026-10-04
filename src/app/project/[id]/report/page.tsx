@@ -150,7 +150,7 @@ export default function ReportPage() {
           <div className="min-w-40 flex-1"><UpgradeNotice feature="brandedReport" compact /></div>
         )}
         <GatedButton allowed={ent.can("csvExport")} feature="csvExport" onClick={downloadCsv}>{t("report.exportCsv")}</GatedButton>
-        <button className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</button>
+        <GatedButton allowed={ent.can("printSummary")} feature="printSummary" className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</GatedButton>
       </div>
 
       {ent.can("reportWeights") && (

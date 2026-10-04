@@ -443,6 +443,8 @@ export const en: Record<string, string> = {
   "land.chart.perSqft": "{price} per acre",
   "land.method.rates": "<b>Adjustment rate used:</b> {sqft} per acre. Land has no bedroom, bathroom or age adjustments.",
   "report.tabs.aria": "Report type",
+  "print.lockedTitle": "Printing is a member feature",
+  "print.lockedBody": "Printing and saving as PDF come with the paid plans. Open CompPilot and choose a plan to print this report.",
   "report.tab.investor": "Investor",
   "report.tab.seller": "Seller",
   "report.tab.buyer": "Buyer",

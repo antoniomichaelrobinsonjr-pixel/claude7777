@@ -92,7 +92,12 @@ body {
   .step { display: inline-flex; height: 24px; width: 24px; align-items: center; justify-content: center; border-radius: 999px; background: var(--brand); color: var(--brand-ink); font-size: 12px; font-weight: 700; }
 }
 
+/* Shown only when someone without a paid plan prints: see PrintGuard. */
+.print-lock-notice { display: none; }
+
 @media print {
+  html[data-print-locked="true"] .app-shell { display: none !important; }
+  html[data-print-locked="true"] .print-lock-notice { display: block; padding: 3rem 1rem; text-align: center; }
   /* Always print on the light palette, even if the screen is in dark mode. */
   :root {
     --bg: #fff; --surface: #fffdf8; --surface-2: #f1ece0; --border: #e6dfcf;

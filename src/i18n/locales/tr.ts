@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from} ile {to} arasında yıllara göre değer. Gösterilen yıllardan sonra düşük, orta ve yüksek senaryolar {low}, {mid} ve {high} değerine ulaşır.",
   "owner.chart.tableAria": "Yıllara göre değer",
   "owner.col.when": "Ne zaman",
+  "print.lockedTitle": "Yazdırma bir üye özelliğidir",
+  "print.lockedBody": "Yazdırma ve PDF olarak kaydetme ücretli planlara dahildir. Bu raporu yazdırmak için CompPilot'u açın ve bir plan seçin.",
 };
 export default messages;

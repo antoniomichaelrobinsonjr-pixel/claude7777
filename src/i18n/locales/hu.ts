@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Érték évenként {from} és {to} között. A megjelenített évek után az alacsony, a közepes és a magas forgatókönyv eléri a következőket: {low}, {mid} és {high}.",
   "owner.chart.tableAria": "Érték évenként",
   "owner.col.when": "Mikor",
+  "print.lockedTitle": "A nyomtatás tagoknak szóló funkció",
+  "print.lockedBody": "A nyomtatás és a PDF-be mentés a fizetős csomagokkal érhető el. Nyissa meg a CompPilot alkalmazást, és válasszon csomagot a jelentés kinyomtatásához.",
 };
 export default messages;

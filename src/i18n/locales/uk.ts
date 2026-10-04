@@ -555,5 +555,7 @@ const messages: Dict = {
   "owner.chart.aria": "Вартість за роками з {from} по {to}. Після показаних років низький, середній і високий сценарії досягають {low}, {mid} та {high}.",
   "owner.chart.tableAria": "Вартість за роками",
   "owner.col.when": "Коли",
+  "print.lockedTitle": "Друк — функція для учасників",
+  "print.lockedBody": "Друк і збереження у PDF входять до платних тарифів. Відкрийте CompPilot і оберіть тариф, щоб надрукувати цей звіт.",
 };
 export default messages;

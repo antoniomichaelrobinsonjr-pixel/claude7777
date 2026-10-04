@@ -589,5 +589,7 @@ const messages: Dict = {
   "owner.chart.aria": "القيمة بحسب السنة من {from} إلى {to}. بعد السنوات المعروضة تصل السيناريوهات المنخفض والمتوسط والمرتفع إلى {low} و{mid} و{high}.",
   "owner.chart.tableAria": "القيمة بحسب السنة",
   "owner.col.when": "متى",
+  "print.lockedTitle": "الطباعة ميزة للأعضاء",
+  "print.lockedBody": "الطباعة والحفظ بصيغة PDF متاحتان ضمن الخطط المدفوعة. افتح CompPilot واختر خطة لطباعة هذا التقرير.",
 };
 export default messages;

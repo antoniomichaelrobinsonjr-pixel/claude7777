@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "ارزش به تفکیک سال از {from} تا {to}. پس از سال‌های نمایش‌داده‌شده، سناریوهای پایین، میانی و بالا به {low}، {mid} و {high} می‌رسند.",
   "owner.chart.tableAria": "ارزش به تفکیک سال",
   "owner.col.when": "زمان",
+  "print.lockedTitle": "چاپ یک امکان ویژه اعضا است",
+  "print.lockedBody": "چاپ و ذخیره PDF در طرح‌های پولی ارائه می‌شود. CompPilot را باز کنید و برای چاپ این گزارش یک طرح انتخاب کنید.",
 };
 export default messages;

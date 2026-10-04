@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from} থেকে {to} পর্যন্ত বছরভিত্তিক মূল্য। দেখানো বছরগুলোর পর নিম্ন, মধ্যম ও উচ্চ পরিস্থিতি পৌঁছায় {low}, {mid} ও {high}-এ।",
   "owner.chart.tableAria": "বছরভিত্তিক মূল্য",
   "owner.col.when": "কখন",
+  "print.lockedTitle": "প্রিন্ট করা সদস্যদের সুবিধা",
+  "print.lockedBody": "প্রিন্ট করা ও PDF সংরক্ষণ পেইড প্ল্যানের সঙ্গে পাওয়া যায়। এই প্রতিবেদন প্রিন্ট করতে CompPilot খুলুন এবং একটি প্ল্যান বেছে নিন।",
 };
 export default messages;

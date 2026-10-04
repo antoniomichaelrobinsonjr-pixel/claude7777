@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Halaga kada taon mula {from} hanggang {to}. Pagkatapos ng mga taong ipinakita, aabot ang mababa, katamtaman at mataas na senaryo sa {low}, {mid} at {high}.",
   "owner.chart.tableAria": "Halaga kada taon",
   "owner.col.when": "Kailan",
+  "print.lockedTitle": "Ang pag-print ay tampok para sa mga miyembro",
+  "print.lockedBody": "Ang pag-print at pag-save bilang PDF ay kasama sa mga bayad na plano. Buksan ang CompPilot at pumili ng plano para i-print ang ulat na ito.",
 };
 export default messages;

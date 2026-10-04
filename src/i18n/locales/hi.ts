@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from} से {to} तक वर्ष-दर-वर्ष मूल्य। दिखाए गए वर्षों के बाद निम्न, मध्यम और उच्च परिदृश्य {low}, {mid} और {high} तक पहुँचते हैं।",
   "owner.chart.tableAria": "वर्ष-दर-वर्ष मूल्य",
   "owner.col.when": "कब",
+  "print.lockedTitle": "प्रिंट करना सदस्यों के लिए सुविधा है",
+  "print.lockedBody": "प्रिंट करना और PDF सहेजना सशुल्क प्लान के साथ मिलता है। इस रिपोर्ट को प्रिंट करने के लिए CompPilot खोलें और कोई प्लान चुनें।",
 };
 export default messages;

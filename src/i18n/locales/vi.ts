@@ -504,5 +504,7 @@ const messages: Dict = {
   "owner.chart.aria": "Giá trị theo năm từ {from} đến {to}. Sau số năm hiển thị, các kịch bản thấp, trung bình và cao đạt lần lượt {low}, {mid} và {high}.",
   "owner.chart.tableAria": "Giá trị theo năm",
   "owner.col.when": "Thời điểm",
+  "print.lockedTitle": "In là tính năng dành cho thành viên",
+  "print.lockedBody": "In và lưu PDF có trong các gói trả phí. Hãy mở CompPilot và chọn một gói để in báo cáo này.",
 };
 export default messages;

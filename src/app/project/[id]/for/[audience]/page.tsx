@@ -9,7 +9,7 @@ import { buyerView, closestComps, DEFAULT_GROWTH, marketPath, ownerSummary, proj
 import { useI18n } from "@/i18n";
 import { n } from "@/i18n/format";
 import { useEntitlements } from "@/billing/entitlements";
-import { UpgradeNotice } from "@/billing/ui";
+import { GatedButton, UpgradeNotice } from "@/billing/ui";
 import { BRAND_KEY, parseBrand, type Brand } from "@/billing/brand";
 import type { Feature } from "@/billing/plans";
 import { MarketPanel, useMarket } from "@/market/panel";
@@ -317,7 +317,7 @@ export default function AudienceReportPage() {
             </label>
           </>
         ) : <div className="min-w-40 flex-1"><UpgradeNotice feature="brandedReport" compact /></div>}
-        {ent.can(feature) && <button className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</button>}
+        {ent.can(feature) && <GatedButton allowed={ent.can("printSummary")} feature="printSummary" className="btn btn-primary" onClick={() => window.print()}>{t("common.print")}</GatedButton>}
       </div>
 
       {!ent.can(feature) ? (

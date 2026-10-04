@@ -36,6 +36,8 @@ export interface Entitlements {
   previewPlan: PlanId | null;
   setPreviewPlan: (p: PlanId | null) => void;
   can: (f: Feature) => boolean;
+  /** Whether this person may print or save to PDF. Always true while billing is off; with billing on, only paid plans (a trial counts) once the plan has loaded. */
+  canPrint: boolean;
   /** Maximum comps per analysis; Infinity when billing is off. */
   maxComps: number;
   canCreate: (existingAnalyses: number) => boolean;
@@ -48,7 +50,7 @@ export interface Entitlements {
 
 const OPEN: Entitlements = {
   billingEnabled: false, preview: false, loading: false, signedIn: false, planId: "studio", subscription: null, trialsUsed: [], previewPlan: null,
-  setPreviewPlan: () => {}, can: () => true, maxComps: Infinity, canCreate: () => true, canAddComp: () => true,
+  setPreviewPlan: () => {}, can: () => true, canPrint: true, maxComps: Infinity, canCreate: () => true, canAddComp: () => true,
   apply: (p) => p, lockedComps: () => 0, refresh: async () => {},
 };
 
@@ -103,6 +105,7 @@ export function EntitlementsProvider({ children }: { children: ReactNode }) {
     return {
       billingEnabled: true, preview: PREVIEW_ENABLED, loading, signedIn, planId, subscription, trialsUsed, previewPlan, setPreviewPlan,
       can: (f) => planCan(planId, f),
+      canPrint: !loading && planCan(planId, "printSummary"),
       maxComps: PLANS[planId].maxComps,
       canCreate: (n) => canCreateAnalysis(planId, n),
       canAddComp: (n) => canAddComp(planId, n),

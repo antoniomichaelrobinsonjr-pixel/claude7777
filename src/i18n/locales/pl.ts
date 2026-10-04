@@ -555,5 +555,7 @@ const messages: Dict = {
   "owner.chart.aria": "Wartość w poszczególnych latach od {from} do {to}. Po pokazanych latach scenariusze niski, średni i wysoki osiągają {low}, {mid} i {high}.",
   "owner.chart.tableAria": "Wartość według roku",
   "owner.col.when": "Kiedy",
+  "print.lockedTitle": "Drukowanie jest funkcją dla członków",
+  "print.lockedBody": "Drukowanie i zapisywanie jako PDF są dostępne w płatnych planach. Otwórz CompPilot i wybierz plan, aby wydrukować ten raport.",
 };
 export default messages;

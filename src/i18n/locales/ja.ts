@@ -504,5 +504,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from}年から{to}年までの年ごとの価値。表示した年数の後、低位・中位・高位シナリオはそれぞれ{low}、{mid}、{high}に達します。",
   "owner.chart.tableAria": "年ごとの価値",
   "owner.col.when": "時期",
+  "print.lockedTitle": "印刷は会員向けの機能です",
+  "print.lockedBody": "印刷とPDF保存は有料プランに含まれています。このレポートを印刷するには、CompPilot を開いてプランを選択してください。",
 };
 export default messages;

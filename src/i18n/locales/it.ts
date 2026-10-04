@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Valore per anno dal {from} al {to}. Dopo gli anni mostrati, gli scenari basso, intermedio e alto raggiungono {low}, {mid} e {high}.",
   "owner.chart.tableAria": "Valore per anno",
   "owner.col.when": "Quando",
+  "print.lockedTitle": "La stampa è una funzione per i membri",
+  "print.lockedBody": "Stampare e salvare in PDF è incluso nei piani a pagamento. Apri CompPilot e scegli un piano per stampare questo report.",
 };
 export default messages;

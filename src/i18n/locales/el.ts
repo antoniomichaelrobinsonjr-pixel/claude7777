@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Αξία ανά έτος από {from} έως {to}. Μετά τα έτη που εμφανίζονται, το χαμηλό, το μεσαίο και το υψηλό σενάριο φτάνουν στα {low}, {mid} και {high}.",
   "owner.chart.tableAria": "Αξία ανά έτος",
   "owner.col.when": "Πότε",
+  "print.lockedTitle": "Η εκτύπωση είναι λειτουργία για μέλη",
+  "print.lockedBody": "Η εκτύπωση και η αποθήκευση ως PDF περιλαμβάνονται στα πληρωμένα πλάνα. Ανοίξτε το CompPilot και επιλέξτε ένα πλάνο για να εκτυπώσετε αυτήν την έκθεση.",
 };
 export default messages;

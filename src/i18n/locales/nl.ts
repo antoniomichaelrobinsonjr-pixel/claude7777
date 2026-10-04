@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "Waarde per jaar van {from} tot {to}. Na de getoonde jaren bereiken het lage, middelste en hoge scenario {low}, {mid} en {high}.",
   "owner.chart.tableAria": "Waarde per jaar",
   "owner.col.when": "Wanneer",
+  "print.lockedTitle": "Afdrukken is een functie voor leden",
+  "print.lockedBody": "Afdrukken en opslaan als pdf zijn onderdeel van de betaalde abonnementen. Open CompPilot en kies een abonnement om dit rapport af te drukken.",
 };
 export default messages;

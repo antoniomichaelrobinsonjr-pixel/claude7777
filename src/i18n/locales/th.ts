@@ -504,5 +504,7 @@ const messages: Dict = {
   "owner.chart.aria": "มูลค่าแต่ละปีตั้งแต่ {from} ถึง {to} หลังจากจำนวนปีที่แสดง สถานการณ์ต่ำ กลาง และสูงจะอยู่ที่ {low}, {mid} และ {high} ตามลำดับ",
   "owner.chart.tableAria": "มูลค่าแต่ละปี",
   "owner.col.when": "เมื่อไร",
+  "print.lockedTitle": "การพิมพ์เป็นฟีเจอร์สำหรับสมาชิก",
+  "print.lockedBody": "การพิมพ์และการบันทึกเป็น PDF รวมอยู่ในแพ็กเกจแบบชำระเงิน เปิด CompPilot แล้วเลือกแพ็กเกจเพื่อพิมพ์รายงานนี้",
 };
 export default messages;

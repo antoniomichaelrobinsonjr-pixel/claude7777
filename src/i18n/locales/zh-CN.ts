@@ -504,5 +504,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from} 至 {to} 各年的价值。在所示年份之后，低、中、高情景分别达到 {low}、{mid} 和 {high}。",
   "owner.chart.tableAria": "各年价值",
   "owner.col.when": "时间",
+  "print.lockedTitle": "打印功能仅限会员使用",
+  "print.lockedBody": "打印和另存为 PDF 包含在付费套餐中。请打开 CompPilot 并选择一个套餐，以打印此报告。",
 };
 export default messages;

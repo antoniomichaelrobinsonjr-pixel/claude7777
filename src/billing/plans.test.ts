@@ -102,3 +102,10 @@ test("input guards", () => {
   assert.equal(isInterval("week"), true);
   assert.equal(isInterval("day"), false);
 });
+
+test("printing: only paid plans can print, and every plan that opens a report can print it", () => {
+  assert.equal(can("starter", "printSummary"), false);
+  for (const p of PLAN_IDS.filter((x) => x !== "starter")) assert.equal(can(p, "printSummary"), true, `${p} can print`);
+  for (const f of ["report", "sellerReport", "buyerReport", "ownerReport"] as const)
+    for (const p of PLAN_IDS) if (can(p, f)) assert.ok(can(p, "printSummary"), `${p} opens ${f} but cannot print it`);
+});

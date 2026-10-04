@@ -521,5 +521,7 @@ const messages: Dict = {
   "owner.chart.aria": "{from} سے {to} تک سال بہ سال قدر۔ دکھائے گئے برسوں کے بعد کم، درمیانہ اور زیادہ منظرنامے {low}، {mid} اور {high} تک پہنچتے ہیں۔",
   "owner.chart.tableAria": "سال بہ سال قدر",
   "owner.col.when": "کب",
+  "print.lockedTitle": "پرنٹ ایک ممبر فیچر ہے",
+  "print.lockedBody": "پرنٹ اور PDF محفوظ کرنا ادائیگی والے پلانز کے ساتھ آتا ہے۔ اس رپورٹ کو پرنٹ کرنے کے لیے CompPilot کھولیں اور کوئی پلان منتخب کریں۔",
 };
 export default messages;

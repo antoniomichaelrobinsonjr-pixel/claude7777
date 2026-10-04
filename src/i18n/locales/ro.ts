@@ -538,5 +538,7 @@ const messages: Dict = {
   "owner.chart.aria": "Valoarea pe ani, din {from} până în {to}. După anii afișați, scenariile scăzut, mediu și ridicat ajung la {low}, {mid} și {high}.",
   "owner.chart.tableAria": "Valoarea pe ani",
   "owner.col.when": "Când",
+  "print.lockedTitle": "Tipărirea este o funcție pentru membri",
+  "print.lockedBody": "Tipărirea și salvarea ca PDF sunt incluse în planurile cu plată. Deschideți CompPilot și alegeți un plan pentru a tipări acest raport.",
 };
 export default messages;

@@ -75,6 +75,8 @@ The scenarios apply the growth rates the owner chooses to today's indicated valu
 
 **Land.** Set *Property type* to Land on an analysis: size is in acres, the only adjustment rate is dollars per acre (plus the manual adjustment), and bedrooms, bathrooms and age are hidden and ignored. Reports, the trend chart, the CSV and the buyer checklist switch to acres and land wording.
 
+**Printing is for paying members.** With billing on, only paid plans (a trial counts) can print or save to PDF: the Print buttons are locks for everyone else, and a browser's own Ctrl/Cmd+P prints only a short notice instead of the analysis or reports. With billing off, printing is open. This is a guard, not copy protection: anything shown on a screen can still be screenshotted or copied.
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 

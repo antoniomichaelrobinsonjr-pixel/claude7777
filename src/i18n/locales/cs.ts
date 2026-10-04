@@ -538,5 +538,7 @@ const messages: Dict = {
   "owner.chart.aria": "Hodnota po letech od {from} do {to}. Po zobrazených letech dosáhnou nízký, střední a vysoký scénář {low}, {mid} a {high}.",
   "owner.chart.tableAria": "Hodnota po letech",
   "owner.col.when": "Kdy",
+  "print.lockedTitle": "Tisk je funkce pro členy",
+  "print.lockedBody": "Tisk a ukládání do PDF jsou součástí placených plánů. Otevřete CompPilot a vyberte plán, abyste mohli tuto zprávu vytisknout.",
 };
 export default messages;
