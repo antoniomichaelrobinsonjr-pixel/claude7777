@@ -98,6 +98,7 @@ body {
   body { background: #fff; color: var(--ink); }
   .card { box-shadow: none; break-inside: avoid; }
   aside { position: static !important; }
+  .leaflet-control-zoom { display: none !important; }
   /* Gradient-clipped text prints with box artifacts; use solid gold instead. */
   .gold-text { background: none; color: var(--gold-a); -webkit-text-fill-color: var(--gold-a); }
   .gold-ink { background: none; color: var(--gtext-b); -webkit-text-fill-color: var(--gtext-b); }

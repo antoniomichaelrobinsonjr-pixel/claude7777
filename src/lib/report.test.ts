@@ -147,3 +147,64 @@ test("a strong price trend is called out as an unadjusted timing risk", () => {
   const flat = buildReport(project(five()), ASOF);
   assert.ok(!flat.limitations.some((l) => l.includes("not adjusted for date of sale")));
 });
+
+const geo = (lat: number, lng: number, address: string, precise = true) => ({ lat, lng, label: `matched: ${address}`, query: address, precise });
+// ~0.69 miles per 0.01 degree of latitude
+const withGeo = (c: Comp, address: string, lat: number, lng = -77): Comp => ({ ...c, address, geo: geo(lat, lng, address) });
+
+test("a typed distance shorter than the straight line is flagged and the map distance is used", () => {
+  const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
+  const near = withGeo(comp({ distanceMi: 0.7 }), "A", 38.91);   // ~0.69 mi: agrees
+  const liar = withGeo(comp({ distanceMi: 0.3 }), "B", 38.92);   // ~1.38 mi: impossible
+  const r = buildReport(project([near, liar, comp({})], { subject: subj }), ASOF);
+  assert.ok(r.comps[0].mapDistanceMi! > 0.6 && r.comps[0].mapDistanceMi! < 0.8);
+  assert.ok(!r.comps[0].flags.some((f) => f.includes("shorter than")));
+  assert.ok(r.comps[1].flags.some((f) => f.includes("Entered distance (0.3 mi) is shorter than the straight-line map distance (1.4 mi)")));
+  assert.ok(Math.abs(r.comps[1].distanceMi! - r.comps[1].mapDistanceMi!) < 1e-9, "scored on the map distance");
+  assert.equal(r.mapped, 2);
+  assert.ok(r.limitations.some((l) => l.includes("1 of 3 comps are not on the map")));
+});
+
+test("a typed distance longer than the straight line is accepted (roads are longer than straight lines)", () => {
+  const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
+  const c = withGeo(comp({ distanceMi: 1.1 }), "A", 38.91); // map ~0.69 mi
+  const r = buildReport(project([c], { subject: subj }), ASOF);
+  assert.equal(r.comps[0].distanceMi, 1.1);
+  assert.ok(!r.comps[0].flags.some((f) => f.includes("shorter than")));
+});
+
+test("a mistyped short distance cannot flatter the grade once the map disagrees", () => {
+  const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
+  const far = (lat: number) => withGeo(comp({ distanceMi: 0.2 }), `P${lat}`, lat);   // typed 0.2, truly ~2+ mi
+  const typedOnly = buildReport(project([0, 1, 2, 3, 4].map(() => comp({ distanceMi: 0.2 })), {}), ASOF);
+  const checked = buildReport(project([38.93, 38.931, 38.932, 38.933, 38.934].map(far), { subject: subj }), ASOF);
+  const prox = (r: ReturnType<typeof buildReport>) => r.factors.find((f) => f.key === "proximity")!.score!;
+  assert.ok(prox(checked) < prox(typedOnly));
+});
+
+test("computed distances are not flagged against themselves and set the basis to map", () => {
+  const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
+  const c = withGeo(comp({ distanceMi: 0.7, distanceComputed: true }), "A", 38.95);
+  const r = buildReport(project([c], { subject: subj }), ASOF);
+  assert.equal(r.distanceBasis, "map");
+  assert.ok(!r.comps[0].flags.some((f) => f.includes("shorter than")));
+  assert.equal(buildReport(project([comp({})]), ASOF).distanceBasis, "entered");
+});
+
+test("a point is ignored once the address was edited after locating", () => {
+  const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
+  const stale = { ...withGeo(comp({}), "A", 38.91), address: "A edited" };
+  const r = buildReport(project([stale], { subject: subj }), ASOF);
+  assert.equal(r.comps[0].geo, null);
+  assert.equal(r.mapped, 0);
+});
+
+test("area-level matches are flagged and disclosed; no geocoding at all adds no map notes", () => {
+  const subj = { address: "S", sqft: 2000, beds: 3, baths: 2, yearBuilt: 2000, geo: geo(38.9, -77, "S") };
+  const c = { ...comp({}), address: "A", geo: geo(38.91, -77, "A", false) };
+  const r = buildReport(project([c], { subject: subj }), ASOF);
+  assert.ok(r.comps[0].flags.includes("Address matched only to the area, not the building"));
+  assert.ok(r.limitations.some((l) => l.includes("approximate")));
+  const none = buildReport(project(five()), ASOF);
+  assert.ok(!none.limitations.some((l) => l.includes("map")));
+});

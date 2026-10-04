@@ -1,4 +1,5 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -6,6 +7,11 @@ import { getProject, saveProject } from "@/lib/storage";
 import { analyze, usd, type Project } from "@/lib/comps";
 import { buildReport, type Grade } from "@/lib/report";
 import { DistanceBars, TrendChart } from "./charts";
+
+const MapView = dynamic(() => import("./map"), {
+  ssr: false,
+  loading: () => <div className="h-[380px] animate-pulse rounded-xl" style={{ background: "var(--surface-2)" }} aria-label="Loading map" />,
+});
 
 const pct = (n: number, d = 1) => `${n.toFixed(d)}%`;
 const signed = (n: number) => `${n < 0 ? "−" : "+"}${usd(Math.abs(n))}`;
@@ -191,8 +197,47 @@ export default function ReportPage() {
             <TrendChart trend={report.trend} />
           </Section>
 
+          <Section title="Map">
+            {report.subjectGeo === null && report.mapped === 0 ? (
+              <p className="muted text-sm">
+                The addresses have not been located yet. Open the analysis and use <strong>Locate addresses</strong> to add a map and measure distances from it.
+              </p>
+            ) : (
+              <>
+                <MapView
+                  subject={report.subjectGeo ? { address: project.subject.address, geo: report.subjectGeo } : null}
+                  comps={report.comps.flatMap((c, i) => (c.geo ? [{ n: i + 1, address: c.address, salePrice: c.salePrice, adjustedPrice: c.adjustedPrice, geo: c.geo, mapDistanceMi: c.mapDistanceMi }] : []))}
+                />
+                <p className="muted mt-2 text-xs">
+                  <strong>S</strong> is the subject property; numbers match the comps in order. The gold ring is one mile from the subject. Positions come from an address lookup and are only as precise as the match listed below. Map data © OpenStreetMap contributors.
+                </p>
+                <details className="mt-2 text-sm">
+                  <summary className="muted cursor-pointer">View as table</summary>
+                  <table className="mt-2 w-full min-w-[520px] text-left">
+                    <thead className="muted text-xs uppercase"><tr><th className="py-1 pr-3">#</th><th className="pr-3">Property</th><th className="pr-3">Matched address</th><th className="text-right">Map distance</th></tr></thead>
+                    <tbody>
+                      {report.subjectGeo && (
+                        <tr className="border-t" style={{ borderColor: "var(--border)" }}><td className="py-1 pr-3">S</td><td className="pr-3">{project.subject.address}</td><td className="pr-3">{report.subjectGeo.label}</td><td className="text-right">—</td></tr>
+                      )}
+                      {report.comps.map((c, i) => (
+                        <tr key={c.id} className="border-t" style={{ borderColor: "var(--border)" }}>
+                          <td className="py-1 pr-3">{i + 1}</td><td className="pr-3">{c.address}</td>
+                          <td className="pr-3">{c.geo ? `${c.geo.label}${c.geo.precise ? "" : " (area only)"}` : "Not located"}</td>
+                          <td className="text-right">{c.mapDistanceMi === null ? "—" : `${c.mapDistanceMi.toFixed(2)} mi`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              </>
+            )}
+          </Section>
+
           <Section title="Distance from the subject property">
             <DistanceBars comps={report.comps} />
+            <p className="muted mt-2 text-xs">
+              {report.distanceBasis === "map" ? "Every distance was measured, or checked, against straight-line map distances between located addresses. A straight line is the shortest possible route, so where an entered distance was shorter, the map distance is used." : report.distanceBasis === "mixed" ? "Some distances were measured or checked on the map (a straight line is the shortest possible route, so the map distance is used where an entered one was shorter); the rest were entered by the preparer and are unchecked." : report.distanceBasis === "entered" ? "Distances were entered by the preparer and have not been checked against a map." : ""}
+            </p>
           </Section>
 
           <Section title="Method">

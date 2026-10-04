@@ -1,9 +1,22 @@
+/** A geocoded location, saved with the exact address text it was found for. */
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+  /** The address the geocoder says it matched, so a wrong match is visible. */
+  label: string;
+  /** The address text that was sent; the point is ignored if the address is edited afterwards. */
+  query: string;
+  /** False when the geocoder only matched a street, suburb or city rather than the building. */
+  precise: boolean;
+}
+
 export interface Subject {
   address: string;
   sqft: number;
   beds: number;
   baths: number;
   yearBuilt: number;
+  geo?: GeoPoint;
 }
 
 export interface Comp {
@@ -21,6 +34,9 @@ export interface Comp {
   included: boolean;
   /** Where this sale came from (MLS number, county record, ...). Shown in the report. */
   source?: string;
+  geo?: GeoPoint;
+  /** True when distanceMi was calculated from geocoded coordinates rather than typed in. */
+  distanceComputed?: boolean;
 }
 
 /** Dollar value of one unit of difference between subject and comp. */

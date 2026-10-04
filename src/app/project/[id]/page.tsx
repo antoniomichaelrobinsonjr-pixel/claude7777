@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, exampleData, newComp, usd, type Analysis, type Comp, type Project, type Rates, type Subject } from "@/lib/comps";
+import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
+import { analyze, exampleData, newComp, usd, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
 
 function Num({ label, value, onChange, step }: { label: string; value: number; onChange: (n: number) => void; step?: number }) {
   return (
@@ -107,6 +108,8 @@ export default function ProjectPage() {
   const [status, setStatus] = useState("");
   const [missing, setMissing] = useState(false);
   const [removed, setRemoved] = useState<{ comp: Comp; index: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState("");
+  const [locating, setLocating] = useState(false);
   const [guided, setGuided] = useState(false);
   const [step, setStep] = useState(1);
   const loaded = useRef(false);
@@ -156,6 +159,57 @@ export default function ProjectPage() {
   const set = (patch: Partial<Project>) => setProject({ ...project, ...patch });
   const setSubject = (patch: Partial<Subject>) => set({ subject: { ...project.subject, ...patch } });
   const setRates = (patch: Partial<Rates>) => set({ rates: { ...project.rates, ...patch } });
+  async function locateAll() {
+    const geocoderUrl = process.env.NEXT_PUBLIC_GEOCODER_URL || DEFAULT_GEOCODER_URL;
+    type Target = { id: string | null; address: string };
+    const todo: Target[] = [];
+    if (project!.subject.address.trim() && !validGeo(project!.subject.geo, project!.subject.address)) todo.push({ id: null, address: project!.subject.address.trim() });
+    for (const c of project!.comps) if (c.address.trim() && !validGeo(c.geo, c.address)) todo.push({ id: c.id, address: c.address.trim() });
+    if (todo.length === 0) {
+      setGeoStatus(project!.subject.address.trim() || project!.comps.some((c) => c.address.trim()) ? "Every address is already located. Edit an address to locate it again." : "Enter addresses first (street, city and state work best).");
+      return;
+    }
+    const host = new URL(geocoderUrl).host;
+    if (!window.confirm(`Send ${todo.length} address${todo.length === 1 ? "" : "es"} to ${host} to find map coordinates?\n\nAddresses are only sent when you use this button.`)) return;
+
+    setLocating(true);
+    const failed: string[] = [];
+    let found = 0;
+    let stopped = "";
+    for (let i = 0; i < todo.length; i++) {
+      const t = todo[i];
+      setGeoStatus(`Locating ${i + 1} of ${todo.length}…`);
+      const r = await geocodeAddress(t.address, { baseUrl: process.env.NEXT_PUBLIC_GEOCODER_URL });
+      if (r.status === "ok") {
+        found++;
+        const point: GeoPoint = r.point;
+        setProject((p) => p && (t.id === null ? { ...p, subject: { ...p.subject, geo: point } } : { ...p, comps: p.comps.map((c) => (c.id === t.id ? { ...c, geo: point } : c)) }));
+      } else if (r.status === "not_found") {
+        failed.push(t.address);
+      } else {
+        stopped = r.message;
+        break;
+      }
+      if (i < todo.length - 1) await new Promise((res) => setTimeout(res, GEOCODE_DELAY_MS));
+    }
+    // Fill in distances measured from the map, never overwriting one the preparer typed.
+    setProject((p) => {
+      if (!p) return p;
+      const subj = validGeo(p.subject.geo, p.subject.address);
+      if (!subj) return p;
+      return {
+        ...p,
+        comps: p.comps.map((c) => {
+          const g = validGeo(c.geo, c.address);
+          if (!g || !(c.distanceMi === 0 || c.distanceComputed)) return c;
+          return { ...c, distanceMi: Math.max(0.1, Math.round(haversineMiles(subj, g) * 10) / 10), distanceComputed: true };
+        }),
+      };
+    });
+    setLocating(false);
+    setGeoStatus(stopped ? `${stopped} ${found} of ${todo.length} located so far.` : `Located ${todo.length - failed.length} of ${todo.length}.${failed.length ? ` Could not find: ${failed.join("; ")}. Try adding the city and state.` : " Distances were measured from the map."}`);
+  }
+
   const duplicateComp = (cid: string) => {
     const i = project.comps.findIndex((c) => c.id === cid);
     if (i < 0) return;
@@ -196,10 +250,15 @@ export default function ProjectPage() {
           <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
             {guided ? "Show all steps" : "Guide me"}
           </button>
+          <button onClick={locateAll} disabled={locating} className="btn" title="Find map coordinates for the addresses and measure distances">
+            {locating ? "Locating…" : "Locate addresses"}
+          </button>
           <Link href={`/project/${project.id}/report`} className="btn">Investor report</Link>
                     <button onClick={() => window.print()} className="btn">Print / save PDF</button>
         </div>
       </div>
+
+      {geoStatus && <p className="no-print muted text-sm" role="status">{geoStatus}</p>}
 
       {guided && (
         <nav className="no-print card flex items-center gap-1 p-2" aria-label="Progress">
@@ -224,7 +283,8 @@ export default function ProjectPage() {
             <Step n={1} title="Subject property" hint="The home you are pricing." />
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <label className="field col-span-2 md:col-span-4">Address
-                <input className="input" value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
+                <input className="input" placeholder="Street, City, State" value={project.subject.address} onChange={(e) => setSubject({ address: e.target.value })} />
+                {(() => { const g = validGeo(project.subject.geo, project.subject.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>📍 {g.precise ? "Matched" : "Matched only to the area"}: {g.label}</span> : null; })()}
               </label>
               <Num label="Sq ft" value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
               <Num label="Beds" value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />
@@ -306,7 +366,8 @@ export default function ProjectPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <label className="field col-span-2">Address
-                      <input className="input" value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
+                      <input className="input" placeholder="Street, City, State" value={c.address} onChange={(e) => setComp(c.id, { address: e.target.value })} />
+                      {(() => { const g = validGeo(c.geo, c.address); return g ? <span className="mt-1 block text-xs font-normal" style={{ color: g.precise ? "var(--ok)" : "var(--warn)" }}>📍 {g.precise ? "Matched" : "Matched only to the area"}: {g.label}</span> : null; })()}
                     </label>
                     <Money label="Sale price" value={c.salePrice} onChange={(n) => setComp(c.id, { salePrice: n })} />
                     <label className="field">Sale date
@@ -316,7 +377,7 @@ export default function ProjectPage() {
                     <Num label="Beds" value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} />
                     <Num label="Baths" step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} />
                     <Num label="Year built" value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />
-                    <Num label="Distance (mi)" step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n })} />
+                    <Num label={c.distanceComputed ? "Distance (mi) · from map" : "Distance (mi)"} step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n, distanceComputed: false })} />
                     <Money label="Other adjustment" negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
                     <label className="field col-span-2">Source <span className="font-normal">(MLS #, county record…)</span>
                       <input className="input" placeholder="Shown in the report so the sale can be verified" value={c.source ?? ""} onChange={(e) => setComp(c.id, { source: e.target.value })} />

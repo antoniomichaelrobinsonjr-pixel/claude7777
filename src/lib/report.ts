@@ -1,4 +1,5 @@
-import { analyze, DEFAULT_RATES, type Project } from "./comps.ts";
+import { analyze, DEFAULT_RATES, type GeoPoint, type Project } from "./comps.ts";
+import { haversineMiles, validGeo } from "./geo.ts";
 
 /** Linear score: 100 when value <= full, 0 when value >= zero. */
 const lin = (value: number, full: number, zero: number) =>
@@ -14,6 +15,10 @@ export interface CompEvidence {
   /** Days between sale and the report date; null when no valid date was entered. */
   ageDays: number | null;
   distanceMi: number | null;
+  /** Straight-line distance from the geocoded addresses, when both were located. */
+  mapDistanceMi: number | null;
+  geo: GeoPoint | null;
+  distanceComputed: boolean;
   sqftDiffPct: number | null;
   grossAdjPct: number;
   netAdjPct: number;
@@ -53,8 +58,14 @@ export interface Trend {
   note: string;
 }
 
+export type DistanceBasis = "map" | "entered" | "mixed" | "none";
+
 export interface Report {
   asOf: string;
+  subjectGeo: GeoPoint | null;
+  /** Number of comps that have a valid located address. */
+  mapped: number;
+  distanceBasis: DistanceBasis;
   /** True when the preparer changed how much the five checks count. */
   customWeights: boolean;
   /** What the score would be with all five checks weighted equally (same caps applied). */
@@ -133,16 +144,25 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   const { subject, rates } = project;
   const med = a.count ? median(a.rows.map((r) => r.adjustedPrice)) : 0;
 
+  const subjectGeo = validGeo(subject.geo, subject.address);
   const comps: CompEvidence[] = a.rows.map((r) => {
     const c = r.comp;
+    const geo = validGeo(c.geo, c.address);
+    const mapDistanceMi = subjectGeo && geo ? haversineMiles(subjectGeo, geo) : null;
     const t = c.saleDate ? Date.parse(c.saleDate) : NaN;
     const ageDays = Number.isFinite(t) ? Math.floor((asOf.getTime() - t) / 86_400_000) : null;
     const flags: string[] = [];
     if (ageDays === null) flags.push("No sale date");
     else if (ageDays < 0) flags.push("Sale date is in the future");
     else if (ageDays > 180) flags.push("Sold more than 6 months ago");
-    if (!(c.distanceMi > 0)) flags.push("No distance entered");
-    else if (c.distanceMi > 1) flags.push("More than 1 mile away");
+    const entered = c.distanceMi > 0 ? c.distanceMi : null;
+    // A straight line is the shortest possible route, so when the map gives a distance the larger of the two is used.
+    const distance = mapDistanceMi !== null ? Math.max(entered ?? 0, mapDistanceMi) : entered;
+    if (distance === null) flags.push("No distance entered");
+    else if (distance > 1) flags.push("More than 1 mile away");
+    if (mapDistanceMi !== null && entered !== null && !c.distanceComputed && mapDistanceMi - entered > 0.25)
+      flags.push(`Entered distance (${entered.toFixed(1)} mi) is shorter than the straight-line map distance (${mapDistanceMi.toFixed(1)} mi); the map distance is used`);
+    if (geo && !geo.precise) flags.push("Address matched only to the area, not the building");
     if (!c.source?.trim()) flags.push("No source recorded");
     if (r.grossAdjPct > 25) flags.push("Heavily adjusted (over 25%)");
     const deviationPct = med > 0 ? ((r.adjustedPrice - med) / med) * 100 : 0;
@@ -155,7 +175,10 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
       adjustedPrice: r.adjustedPrice,
       weight: r.weight,
       ageDays,
-      distanceMi: c.distanceMi > 0 ? c.distanceMi : null,
+      distanceMi: distance,
+      mapDistanceMi,
+      geo,
+      distanceComputed: !!c.distanceComputed && c.distanceMi > 0,
       sqftDiffPct: subject.sqft > 0 && c.sqft > 0 ? (Math.abs(c.sqft - subject.sqft) / subject.sqft) * 100 : null,
       grossAdjPct: r.grossAdjPct,
       netAdjPct: c.salePrice > 0 ? (r.netAdj / c.salePrice) * 100 : 0,
@@ -174,6 +197,11 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   const spreadPct = a.count && a.median > 0 ? ((a.high - a.low) / a.median) * 100 : 0;
   const avgGross = n ? mean(comps.map((c) => c.grossAdjPct)) : null;
 
+  const withDistance = comps.filter((c) => c.distanceMi !== null);
+  const mapBacked = withDistance.filter((c) => c.mapDistanceMi !== null).length;
+  const distanceBasis: DistanceBasis = withDistance.length === 0 ? "none" : mapBacked === withDistance.length ? "map" : mapBacked === 0 ? "entered" : "mixed";
+  const mapped = comps.filter((c) => c.geo).length;
+
   const factors: Factor[] = [
     {
       key: "count", weight: 1, weightPct: 20, label: "Number of comparable sales",
@@ -190,7 +218,7 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
     {
       key: "proximity", weight: 1, weightPct: 20, label: "How close the comps are",
       score: dists.length ? lin(mean(dists), 0.5, 3) : null,
-      value: dists.length ? `Average ${mean(dists).toFixed(1)} mi (${dists.length} of ${n} entered)` : "No distances entered",
+      value: dists.length ? `Average ${mean(dists).toFixed(1)} mi (${dists.length} of ${n} ${distanceBasis === "map" ? "measured or checked on the map" : "entered"})` : "No distances entered",
       rule: "Full marks at half a mile or less, falling to zero at 3 miles.",
     },
     {
@@ -236,6 +264,11 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   if (ages.length < n) limitations.push(`${n - ages.length} of ${n} comps have no valid sale date.`);
   if (dists.length < n) limitations.push(`${n - dists.length} of ${n} comps have no distance entered.`);
   if (n < 3) limitations.push("Fewer than three comparable sales were used, which is thin support for a value range.");
+  if (mapped > 0 || subjectGeo) {
+    if (!subjectGeo) limitations.push("The subject property's address has not been located, so entered distances were not checked against the map.");
+    if (mapped < n) limitations.push(`${n - mapped} of ${n} comps are not on the map because their addresses have not been located, or were edited after locating.`);
+    if (comps.some((c) => c.geo && !c.geo.precise)) limitations.push("Some addresses were matched only to a street or area, so their map positions and distances are approximate.");
+  }
   const trend = buildTrend(a.rows, asOf);
   if (trend.slopePctPerMonth !== null && Math.abs(trend.slopePctPerMonth) >= 0.5 && (trend.r2 ?? 0) >= 0.5)
     limitations.push(`Prices per sq ft in these sales are ${trend.slopePctPerMonth > 0 ? "rising" : "falling"} about ${Math.abs(trend.slopePctPerMonth).toFixed(1)}% per month, but comps are not adjusted for date of sale. ${trend.slopePctPerMonth > 0 ? "Older comps may understate" : "Older comps may overstate"} current value.`);
@@ -245,6 +278,7 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
 
   return {
     asOf: asOf.toISOString(),
+    subjectGeo, mapped, distanceBasis,
     customWeights, equalWeightScore, equalWeightGrade: gradeFor(equalWeightScore),
     trend,
     count: n, comps, factors, score, grade: gradeFor(score), caps, limitations,
