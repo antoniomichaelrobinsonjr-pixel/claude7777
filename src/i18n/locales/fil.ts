@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "Mas malaki sa 200 KB ang larawang iyon.",
   "brand.badType": "Pumili ng larawang PNG, JPG o SVG.",
   "report.exportCsv": "I-download ang CSV",
+  "pricing.cta.trial": "Simulan ang 7-araw na libreng pagsubok",
+  "pricing.trialTerms": "Libre sa loob ng 7 araw, pagkatapos ay {price}. Kailangan ng card at awtomatiko itong sisingilin kapag natapos ang pagsubok maliban kung magkansela ka muna. Magkansela anumang oras mula sa Pamahalaan ang billing. Magagamit nang isang beses bawat account ang pagsubok ng bawat plano.",
+  "billing.trialBadge": "Pagsubok",
+  "pricing.status.trialing": "Magtatapos ang iyong libreng pagsubok sa {date}. Sisingilin ang iyong card pagkatapos nito maliban kung magkansela ka muna sa Pamahalaan ang billing.",
 };
 export default messages;

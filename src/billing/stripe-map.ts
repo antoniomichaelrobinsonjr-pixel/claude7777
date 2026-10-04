@@ -1,4 +1,4 @@
-import { INTERVALS, PLAN_IDS, isInterval, isPlanId, type Interval, type PlanId } from "./plans.ts";
+import { INTERVALS, PLAN_IDS, TRIAL_DAYS, isInterval, isPlanId, trialEligible, type Interval, type PlanId } from "./plans.ts";
 
 /** Names of the environment variables holding the nine Stripe Price ids, e.g. STRIPE_PRICE_PRO_MONTH. */
 export const priceEnvName = (plan: PlanId, interval: Interval) => `STRIPE_PRICE_${plan.toUpperCase()}_${interval.toUpperCase()}`;
@@ -41,6 +41,8 @@ export interface Profile {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   last_event_at: number;
+  /** Paid plans whose free trial has been started. Only the webhook writes this, so a trial cannot be repeated. */
+  trials_used: PlanId[];
 }
 export type ProfilePatch = Omit<Profile, "user_id">;
 
@@ -48,7 +50,7 @@ export type ProfilePatch = Omit<Profile, "user_id">;
  * Turn a Stripe subscription into the plan someone should have. Unknown prices, or a price whose billing interval
  * disagrees with our configuration, grant nothing: a misconfiguration must never hand out paid access.
  */
-export function patchFromSubscription(sub: SubscriptionLike, env: Env, eventCreated: number): ProfilePatch | null {
+export function patchFromSubscription(sub: SubscriptionLike, env: Env, eventCreated: number, trialsUsed: readonly PlanId[] = []): ProfilePatch | null {
   const item = sub.items?.data?.[0];
   if (!item) return null;
   const mapped = planFromPriceId(item.price.id, env);
@@ -65,6 +67,8 @@ export function patchFromSubscription(sub: SubscriptionLike, env: Env, eventCrea
     current_period_end: typeof end === "number" ? new Date(end * 1000).toISOString() : null,
     cancel_at_period_end: !!sub.cancel_at_period_end,
     last_event_at: eventCreated,
+    // Starting a trial uses it up for good, even if it is cancelled; a later subscription to the same plan is billed at once.
+    trials_used: sub.status === "trialing" && !trialsUsed.includes(mapped.plan) ? [...trialsUsed, mapped.plan] : [...trialsUsed],
   };
 }
 
@@ -86,6 +90,8 @@ export function parseCheckoutRequest(body: unknown, env: Env):
   return priceId ? { ok: true, plan: b.plan, interval: b.interval, priceId } : { ok: false, error: "not_configured" };
 }
 
+export { trialEligible };
+
 export interface CheckoutInput {
   priceId: string;
   plan: PlanId;
@@ -93,6 +99,8 @@ export interface CheckoutInput {
   userId: string;
   email?: string | null;
   customerId?: string | null;
+  /** Whether this checkout includes the free trial (decided on the server from the profile, never from the request). */
+  trial?: boolean;
   siteUrl: string;
   env: Env;
 }
@@ -110,7 +118,12 @@ export function buildCheckoutParams(i: CheckoutInput) {
     allow_promotion_codes: true,
     billing_address_collection: "auto" as const,
     metadata: meta,
-    subscription_data: { metadata: meta },
+    subscription_data: {
+      metadata: meta,
+      ...(i.trial ? { trial_period_days: TRIAL_DAYS, trial_settings: { end_behavior: { missing_payment_method: "cancel" as const } } } : {}),
+    },
+    // A card is always collected, so the plan carries on (or is cancelled by Stripe) when the trial ends.
+    ...(i.trial ? { payment_method_collection: "always" as const } : {}),
     ...(i.env.STRIPE_AUTOMATIC_TAX === "1" ? { automatic_tax: { enabled: true } } : {}),
     ...(i.env.STRIPE_REQUIRE_TERMS === "1" ? { consent_collection: { terms_of_service: "required" as const } } : {}),
   };

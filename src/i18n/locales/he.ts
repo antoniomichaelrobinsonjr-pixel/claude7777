@@ -400,5 +400,9 @@ const messages: Dict = {
   "brand.tooLarge": "התמונה גדולה מ-200 KB.",
   "brand.badType": "אנא בחרו תמונת PNG, JPG או SVG.",
   "report.exportCsv": "הורדת CSV",
+  "pricing.cta.trial": "התחילו ניסיון חינם ל-7 ימים",
+  "pricing.trialTerms": "חינם ל-7 ימים, ולאחר מכן {price}. נדרש כרטיס, והוא יחויב אוטומטית בסיום תקופת הניסיון אלא אם תבטלו קודם. אפשר לבטל בכל עת דרך \"ניהול חיוב\". את תקופת הניסיון של כל תוכנית אפשר לנצל פעם אחת לכל חשבון.",
+  "billing.trialBadge": "ניסיון",
+  "pricing.status.trialing": "תקופת הניסיון החינמית שלכם מסתיימת ב-{date}. הכרטיס שלכם יחויב אז אלא אם תבטלו קודם ב\"ניהול חיוב\".",
 };
 export default messages;

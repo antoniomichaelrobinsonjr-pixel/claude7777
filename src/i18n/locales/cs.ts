@@ -400,5 +400,9 @@ const messages: Dict = {
   "brand.tooLarge": "Obrázek je větší než 200 KB.",
   "brand.badType": "Vyberte prosím obrázek PNG, JPG nebo SVG.",
   "report.exportCsv": "Stáhnout CSV",
+  "pricing.cta.trial": "Začít 7denní zkušební dobu zdarma",
+  "pricing.trialTerms": "Zdarma na 7 dní, poté {price}. Je vyžadována karta, která se po skončení zkušební doby automaticky zatíží, pokud předtím nezrušíte. Zrušit můžete kdykoli v části Spravovat fakturaci. Zkušební dobu každého plánu lze využít jednou na účet.",
+  "billing.trialBadge": "Zkušební doba",
+  "pricing.status.trialing": "Vaše bezplatná zkušební doba končí {date}. Poté bude vaše karta zatížena, pokud předtím nezrušíte v části Spravovat fakturaci.",
 };
 export default messages;

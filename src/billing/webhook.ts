@@ -37,13 +37,13 @@ export async function handleStripeEvent(event: StripeEventLike, deps: WebhookDep
     return { handled: false, reason: "ignored_event" };
   }
 
-  const patch = patchFromSubscription(sub, deps.env, event.created);
-  if (!patch) return { handled: false, reason: "unknown_price" };
-
   // The user id comes from our own metadata; fall back to the Stripe customer we already linked.
   let existing: Profile | null = null;
   if (userId) existing = await deps.findProfile({ userId });
   else existing = await deps.findProfile({ customerId: sub.customer });
+
+  const patch = patchFromSubscription(sub, deps.env, event.created, existing?.trials_used ?? []);
+  if (!patch) return { handled: false, reason: "unknown_price" };
   const resolved = userId ?? existing?.user_id;
   if (!resolved) return { handled: false, reason: "no_user" };
 

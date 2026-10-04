@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "Die afbeelding is groter dan 200 KB.",
   "brand.badType": "Kies een PNG-, JPG- of SVG-afbeelding.",
   "report.exportCsv": "CSV downloaden",
+  "pricing.cta.trial": "Gratis proefperiode van 7 dagen starten",
+  "pricing.trialTerms": "7 dagen gratis, daarna {price}. Een kaart is vereist en wordt automatisch belast zodra de proefperiode eindigt, tenzij u eerst opzegt. U kunt op elk moment opzeggen via Facturering beheren. De proefperiode van elk abonnement kan één keer per account worden gebruikt.",
+  "billing.trialBadge": "Proef",
+  "pricing.status.trialing": "Uw gratis proefperiode eindigt op {date}. Uw kaart wordt dan belast, tenzij u eerst opzegt via Facturering beheren.",
 };
 export default messages;

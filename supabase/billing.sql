@@ -14,6 +14,9 @@ create table if not exists profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Free trials already used (one per paid plan per account). Written only by the webhook, like everything else here.
+alter table profiles add column if not exists trials_used text[] not null default '{}';
+
 alter table profiles enable row level security;
 
 -- People can read their own plan. There are deliberately NO insert/update/delete policies: only the server

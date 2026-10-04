@@ -384,5 +384,9 @@ const messages: Dict = {
   "plan.plus.name": "Plus",
   "plan.pro.name": "Pro",
   "plan.studio.name": "Studio",
+  "pricing.cta.trial": "Commencer l’essai gratuit de 7 jours",
+  "pricing.trialTerms": "Gratuit pendant 7 jours, puis {price}. Une carte est requise et elle est débitée automatiquement à la fin de l’essai, sauf si vous résiliez avant. Résiliez à tout moment depuis Gérer la facturation. L’essai de chaque formule ne peut être utilisé qu’une fois par compte.",
+  "billing.trialBadge": "Essai",
+  "pricing.status.trialing": "Votre essai gratuit se termine le {date}. Votre carte est alors débitée, sauf si vous résiliez avant dans Gérer la facturation.",
 };
 export default messages;

@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "Bu görsel 200 KB'tan büyük.",
   "brand.badType": "Lütfen PNG, JPG veya SVG görseli seçin.",
   "report.exportCsv": "CSV indir",
+  "pricing.cta.trial": "7 günlük ücretsiz denemeyi başlat",
+  "pricing.trialTerms": "7 gün ücretsiz, sonrasında {price}. Kart gerekir ve siz önce iptal etmezseniz deneme sona erdiğinde kartınızdan otomatik olarak ücret alınır. İstediğiniz zaman Faturalamayı yönet bölümünden iptal edebilirsiniz. Her planın denemesi hesap başına bir kez kullanılabilir.",
+  "billing.trialBadge": "Deneme",
+  "pricing.status.trialing": "Ücretsiz denemeniz {date} tarihinde sona erer. Faturalamayı yönet bölümünden önce iptal etmezseniz kartınızdan o zaman ücret alınır.",
 };
 export default messages;

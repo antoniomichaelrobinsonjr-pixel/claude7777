@@ -368,5 +368,9 @@ const messages: Dict = {
   "brand.tooLarge": "이미지가 200 KB를 초과합니다.",
   "brand.badType": "PNG, JPG 또는 SVG 이미지를 선택하세요.",
   "report.exportCsv": "CSV 다운로드",
+  "pricing.cta.trial": "7일 무료 체험 시작",
+  "pricing.trialTerms": "7일간 무료이며, 이후 {price}이(가) 결제됩니다. 카드 등록이 필요하며, 먼저 해지하지 않으면 체험이 끝날 때 자동으로 결제됩니다. 언제든지 '결제 관리'에서 해지할 수 있습니다. 각 요금제의 체험은 계정당 한 번만 이용할 수 있습니다.",
+  "billing.trialBadge": "체험",
+  "pricing.status.trialing": "무료 체험은 {date}에 종료됩니다. 먼저 '결제 관리'에서 해지하지 않으면 그때 카드로 결제됩니다.",
 };
 export default messages;

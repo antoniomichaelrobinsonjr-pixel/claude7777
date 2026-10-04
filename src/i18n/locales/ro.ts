@@ -400,5 +400,9 @@ const messages: Dict = {
   "brand.tooLarge": "Imaginea depășește 200 KB.",
   "brand.badType": "Alegeți o imagine PNG, JPG sau SVG.",
   "report.exportCsv": "Descarcă CSV",
+  "pricing.cta.trial": "Începe perioada de probă gratuită de 7 zile",
+  "pricing.trialTerms": "Gratuit timp de 7 zile, apoi {price}. Este necesar un card, care este debitat automat la încheierea perioadei de probă, dacă nu anulați înainte. Puteți anula oricând din Gestionează facturarea. Perioada de probă a fiecărui plan poate fi folosită o singură dată pe cont.",
+  "billing.trialBadge": "Probă",
+  "pricing.status.trialing": "Perioada dvs. de probă gratuită se încheie la {date}. Cardul dvs. este debitat atunci, dacă nu anulați înainte din Gestionează facturarea.",
 };
 export default messages;

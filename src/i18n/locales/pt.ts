@@ -384,5 +384,9 @@ const messages: Dict = {
   "plan.plus.name": "Plus",
   "plan.pro.name": "Pro",
   "plan.studio.name": "Studio",
+  "pricing.cta.trial": "Começar teste grátis de 7 dias",
+  "pricing.trialTerms": "Grátis por 7 dias, depois {price}. É necessário um cartão, que é cobrado automaticamente quando o teste termina, a menos que você cancele antes. Cancele a qualquer momento em Gerenciar cobrança. O teste de cada plano pode ser usado uma vez por conta.",
+  "billing.trialBadge": "Teste",
+  "pricing.status.trialing": "Seu teste grátis termina em {date}. Seu cartão será cobrado nessa data, a menos que você cancele antes em Gerenciar cobrança.",
 };
 export default messages;

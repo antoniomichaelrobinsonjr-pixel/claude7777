@@ -63,7 +63,7 @@ export default function Header() {
                   aria-label={t("billing.yourPlan", { plan: t(`plan.${ent.planId}.name`) })}
                   data-testid="plan-badge"
                 >
-                  {t(`plan.${ent.planId}.name`)}
+                  {t(`plan.${ent.planId}.name`)}{ent.subscription?.status === "trialing" && ` · ${t("billing.trialBadge")}`}
                 </a>
               )}
             </>

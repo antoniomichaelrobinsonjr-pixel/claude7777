@@ -416,5 +416,9 @@ const messages: Dict = {
   "brand.tooLarge": "Ten obraz jest większy niż 200 KB.",
   "brand.badType": "Wybierz obraz PNG, JPG lub SVG.",
   "report.exportCsv": "Pobierz CSV",
+  "pricing.cta.trial": "Rozpocznij 7-dniowy bezpłatny okres próbny",
+  "pricing.trialTerms": "Bezpłatnie przez 7 dni, potem {price}. Wymagana jest karta, z której po zakończeniu okresu próbnego automatycznie pobierana jest opłata, chyba że wcześniej anulujesz. Możesz anulować w dowolnym momencie w sekcji Zarządzaj płatnościami. Okres próbny każdego planu można wykorzystać raz na konto.",
+  "billing.trialBadge": "Próba",
+  "pricing.status.trialing": "Twój bezpłatny okres próbny kończy się {date}. Wtedy z karty zostanie pobrana opłata, chyba że wcześniej anulujesz w sekcji Zarządzaj płatnościami.",
 };
 export default messages;

@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "L'immagine supera i 200 KB.",
   "brand.badType": "Scegli un'immagine PNG, JPG o SVG.",
   "report.exportCsv": "Scarica CSV",
+  "pricing.cta.trial": "Inizia la prova gratuita di 7 giorni",
+  "pricing.trialTerms": "Gratis per 7 giorni, poi {price}. È richiesta una carta, che viene addebitata automaticamente al termine della prova, a meno che tu non annulli prima. Puoi annullare in qualsiasi momento da Gestisci fatturazione. La prova di ogni piano può essere usata una sola volta per account.",
+  "billing.trialBadge": "Prova",
+  "pricing.status.trialing": "La tua prova gratuita termina il {date}. La carta verrà addebitata in quel momento, a meno che tu non annulli prima da Gestisci fatturazione.",
 };
 export default messages;

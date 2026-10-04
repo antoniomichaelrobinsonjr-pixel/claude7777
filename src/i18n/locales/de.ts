@@ -384,5 +384,9 @@ const messages: Dict = {
   "plan.plus.name": "Plus",
   "plan.pro.name": "Pro",
   "plan.studio.name": "Studio",
+  "pricing.cta.trial": "7-tägige kostenlose Testphase starten",
+  "pricing.trialTerms": "7 Tage kostenlos, danach {price}. Eine Karte ist erforderlich und wird automatisch belastet, wenn die Testphase endet, sofern Sie nicht vorher kündigen. Kündigen Sie jederzeit über Abrechnung verwalten. Die Testphase jedes Tarifs kann einmal pro Konto genutzt werden.",
+  "billing.trialBadge": "Test",
+  "pricing.status.trialing": "Ihre kostenlose Testphase endet am {date}. Danach wird Ihre Karte belastet, sofern Sie nicht vorher unter Abrechnung verwalten kündigen.",
 };
 export default messages;

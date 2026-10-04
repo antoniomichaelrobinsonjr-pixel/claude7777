@@ -23,6 +23,7 @@ export interface Subscription {
   cancelAtPeriodEnd: boolean;
 }
 
+
 export interface Entitlements {
   billingEnabled: boolean;
   preview: boolean;
@@ -30,6 +31,8 @@ export interface Entitlements {
   signedIn: boolean;
   planId: PlanId;
   subscription: Subscription | null;
+  /** Paid plans whose free trial this account has already used. */
+  trialsUsed: PlanId[];
   previewPlan: PlanId | null;
   setPreviewPlan: (p: PlanId | null) => void;
   can: (f: Feature) => boolean;
@@ -44,7 +47,7 @@ export interface Entitlements {
 }
 
 const OPEN: Entitlements = {
-  billingEnabled: false, preview: false, loading: false, signedIn: false, planId: "studio", subscription: null, previewPlan: null,
+  billingEnabled: false, preview: false, loading: false, signedIn: false, planId: "studio", subscription: null, trialsUsed: [], previewPlan: null,
   setPreviewPlan: () => {}, can: () => true, maxComps: Infinity, canCreate: () => true, canAddComp: () => true,
   apply: (p) => p, lockedComps: () => 0, refresh: async () => {},
 };
@@ -57,18 +60,20 @@ export function EntitlementsProvider({ children }: { children: ReactNode }) {
   const [signedIn, setSignedIn] = useState(false);
   const [dbPlan, setDbPlan] = useState<PlanId>("starter");
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [trialsUsed, setTrialsUsed] = useState<PlanId[]>([]);
   const [previewPlan, setPreviewState] = useState<PlanId | null>(null);
 
   const load = useCallback(async () => {
     if (!BILLING_ENABLED) return;
-    if (!supabase) { setSignedIn(false); setDbPlan("starter"); setSubscription(null); setLoading(false); return; }
+    if (!supabase) { setSignedIn(false); setDbPlan("starter"); setSubscription(null); setTrialsUsed([]); setLoading(false); return; }
     const { data: { session } } = await supabase.auth.getSession();
     setSignedIn(!!session);
-    if (!session) { setDbPlan("starter"); setSubscription(null); setLoading(false); return; }
+    if (!session) { setDbPlan("starter"); setSubscription(null); setTrialsUsed([]); setLoading(false); return; }
     const { data } = await supabase.from("profiles")
-      .select("plan, interval, status, current_period_end, cancel_at_period_end").eq("user_id", session.user.id).maybeSingle();
+      .select("plan, interval, status, current_period_end, cancel_at_period_end, trials_used").eq("user_id", session.user.id).maybeSingle();
     const active = !!data && ACCESS_STATUSES.has(data.status) && isPlanId(data.plan);
     setDbPlan(active ? (data!.plan as PlanId) : "starter");
+    setTrialsUsed(Array.isArray(data?.trials_used) ? (data!.trials_used as unknown[]).filter(isPlanId) : []);
     setSubscription(data && data.status !== "none"
       ? { interval: data.interval ?? null, status: data.status, currentPeriodEnd: data.current_period_end ?? null, cancelAtPeriodEnd: !!data.cancel_at_period_end }
       : null);
@@ -96,7 +101,7 @@ export function EntitlementsProvider({ children }: { children: ReactNode }) {
     if (!BILLING_ENABLED) return OPEN;
     const planId = PREVIEW_ENABLED && previewPlan ? previewPlan : dbPlan;
     return {
-      billingEnabled: true, preview: PREVIEW_ENABLED, loading, signedIn, planId, subscription, previewPlan, setPreviewPlan,
+      billingEnabled: true, preview: PREVIEW_ENABLED, loading, signedIn, planId, subscription, trialsUsed, previewPlan, setPreviewPlan,
       can: (f) => planCan(planId, f),
       maxComps: PLANS[planId].maxComps,
       canCreate: (n) => canCreateAnalysis(planId, n),
@@ -105,7 +110,7 @@ export function EntitlementsProvider({ children }: { children: ReactNode }) {
       lockedComps: (p) => lockedCompCount(p, planId),
       refresh: load,
     };
-  }, [dbPlan, loading, signedIn, subscription, previewPlan, setPreviewPlan, load]);
+  }, [dbPlan, loading, signedIn, subscription, trialsUsed, previewPlan, setPreviewPlan, load]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

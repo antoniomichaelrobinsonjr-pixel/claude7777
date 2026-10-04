@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "Bilden är större än 200 KB.",
   "brand.badType": "Välj en PNG-, JPG- eller SVG-bild.",
   "report.exportCsv": "Ladda ned CSV",
+  "pricing.cta.trial": "Starta 7 dagars gratis provperiod",
+  "pricing.trialTerms": "Gratis i 7 dagar, därefter {price}. Kort krävs och debiteras automatiskt när provperioden slutar om du inte säger upp först. Säg upp när som helst via Hantera fakturering. Varje plans provperiod kan användas en gång per konto.",
+  "billing.trialBadge": "Provperiod",
+  "pricing.status.trialing": "Din gratis provperiod slutar den {date}. Ditt kort debiteras då om du inte säger upp först i Hantera fakturering.",
 };
 export default messages;

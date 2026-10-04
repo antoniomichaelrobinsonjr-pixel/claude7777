@@ -116,7 +116,7 @@ function fakeDeps(initial: Profile[] = [], subs: Record<string, SubscriptionLike
   return { deps, db };
 }
 const ev = (type: string, object: Record<string, unknown>, created = 100): StripeEventLike => ({ id: "evt_" + created, type, created, data: { object } });
-const profile = (o: Partial<Profile> = {}): Profile => ({ user_id: "user-1", plan: "starter", interval: null, status: "none", stripe_customer_id: "cus_1", stripe_subscription_id: null, current_period_end: null, cancel_at_period_end: false, last_event_at: 0, ...o });
+const profile = (o: Partial<Profile> = {}): Profile => ({ user_id: "user-1", plan: "starter", interval: null, status: "none", stripe_customer_id: "cus_1", stripe_subscription_id: null, current_period_end: null, cancel_at_period_end: false, last_event_at: 0, trials_used: [], ...o });
 
 test("webhook: subscription created grants the plan; deleted takes it away", async () => {
   const { deps, db } = fakeDeps();
@@ -258,4 +258,64 @@ test("webhook endpoint: a storage failure returns 500 so Stripe retries", async 
   const broken = { ...deps, secret, saveProfile: async () => { throw new Error("db down"); }, constructEvent: (b: string, s: string, sec: string) => stripe.webhooks.constructEvent(b, s, sec) as unknown as StripeEventLike };
   const payload = JSON.stringify({ id: "evt_78", object: "event", type: "customer.subscription.created", created: 100, data: { object: sub() } });
   assert.equal((await processWebhook(payload, Stripe.webhooks.generateTestHeaderString({ payload, secret }), broken)).status, 500);
+});
+
+// ---- seven-day free trials ----
+import { TRIAL_DAYS, trialEligible } from "./plans.ts";
+import { en } from "../i18n/en.ts";
+
+test("trial: every paid plan is eligible once; starter never; a used plan is not", () => {
+  assert.equal(TRIAL_DAYS, 7);
+  for (const p of PLAN_IDS) assert.equal(trialEligible(p, []), p !== "starter");
+  assert.equal(trialEligible("pro", ["plus"]), true, "trying one plan does not use up the others");
+  assert.equal(trialEligible("pro", ["plus", "pro"]), false);
+  assert.equal(trialEligible("pro", null), true);
+});
+
+test("trial: checkout asks Stripe for a 7-day trial with a card, only when the server says it is allowed", () => {
+  const base = { priceId: "price_pro_month", plan: "pro" as const, interval: "month" as const, userId: "u1", siteUrl: "https://app.example", env: {} };
+  const t = buildCheckoutParams({ ...base, trial: true }) as Record<string, any>;
+  assert.equal(t.subscription_data.trial_period_days, 7);
+  assert.deepEqual(t.subscription_data.trial_settings, { end_behavior: { missing_payment_method: "cancel" } });
+  assert.equal(t.payment_method_collection, "always");
+  const n = buildCheckoutParams(base) as Record<string, any>;
+  assert.equal(n.subscription_data.trial_period_days, undefined);
+  assert.equal(n.payment_method_collection, undefined);
+});
+
+test("trial: the request body cannot ask for or skip a trial; the stored history decides", async () => {
+  const fresh = checkoutDeps({ body: { plan: "pro", interval: "month", trial: false, trial_period_days: 0 } });
+  await processCheckout(fresh.deps);
+  assert.equal((fresh.created[0] as any).subscription_data.trial_period_days, 7);
+  const used = checkoutDeps({ body: { plan: "pro", interval: "month", trial: true, trial_period_days: 30 }, loadProfile: async () => ({ stripe_customer_id: "cus_1", status: "canceled", plan: "starter", trials_used: ["pro"] }) });
+  await processCheckout(used.deps);
+  assert.equal((used.created[0] as any).subscription_data.trial_period_days, undefined);
+  const other = checkoutDeps({ body: { plan: "studio", interval: "year" }, loadProfile: async () => ({ stripe_customer_id: "cus_1", status: "canceled", plan: "starter", trials_used: ["pro"] }) });
+  await processCheckout(other.deps);
+  assert.equal((other.created[0] as any).subscription_data.trial_period_days, 7, "Studio still gets its own trial after Pro's");
+});
+
+test("trial: the webhook records a started trial, keeps it after cancelling, and grants access while trialing", async () => {
+  const { deps, db } = fakeDeps();
+  await handleStripeEvent(ev("customer.subscription.created", sub({ status: "trialing" }) as unknown as Record<string, unknown>, 100), deps);
+  assert.equal(db.get("user-1")!.plan, "pro");
+  assert.equal(db.get("user-1")!.status, "trialing");
+  assert.deepEqual(db.get("user-1")!.trials_used, ["pro"]);
+  await handleStripeEvent(ev("customer.subscription.updated", sub({ status: "active" }) as unknown as Record<string, unknown>, 200), deps);
+  assert.deepEqual(db.get("user-1")!.trials_used, ["pro"], "converting to paid keeps the record");
+  await handleStripeEvent(ev("customer.subscription.deleted", sub({ status: "canceled" }) as unknown as Record<string, unknown>, 300), deps);
+  assert.equal(db.get("user-1")!.plan, "starter");
+  assert.deepEqual(db.get("user-1")!.trials_used, ["pro"], "cancelling does not give the trial back");
+  await handleStripeEvent(ev("customer.subscription.created", sub({ id: "sub_2", status: "trialing", price: "price_studio_year", interval: "year" }) as unknown as Record<string, unknown>, 400), deps);
+  assert.deepEqual(db.get("user-1")!.trials_used, ["pro", "studio"]);
+});
+
+test("trial: a plan bought without a trial is not recorded as a trial", async () => {
+  const { deps, db } = fakeDeps();
+  await handleStripeEvent(ev("customer.subscription.created", sub() as unknown as Record<string, unknown>, 100), deps);
+  assert.deepEqual(db.get("user-1")!.trials_used, []);
+});
+
+test("trial: the 7 written into the wording matches TRIAL_DAYS", () => {
+  for (const k of ["pricing.cta.trial", "pricing.trialTerms", "pricing.status.trialing"] as const) if (k !== "pricing.status.trialing") assert.ok(en[k].includes(String(TRIAL_DAYS)), k);
 });

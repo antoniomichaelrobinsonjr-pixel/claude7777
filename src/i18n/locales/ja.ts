@@ -368,5 +368,9 @@ const messages: Dict = {
   "brand.tooLarge": "この画像は 200 KB を超えています。",
   "brand.badType": "PNG、JPG、SVG のいずれかの画像を選択してください。",
   "report.exportCsv": "CSVをダウンロード",
+  "pricing.cta.trial": "7日間の無料トライアルを開始",
+  "pricing.trialTerms": "最初の7日間は無料、その後は {price} です。カードの登録が必要で、先に解約しない限り、トライアル終了時に自動的に請求されます。解約は「請求を管理」からいつでも行えます。各プランのトライアルは、1アカウントにつき1回のみ利用できます。",
+  "billing.trialBadge": "トライアル",
+  "pricing.status.trialing": "無料トライアルは {date} に終了します。先に「請求を管理」で解約しない限り、その時点でカードに請求されます。",
 };
 export default messages;

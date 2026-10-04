@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "Picha hiyo ni kubwa kuliko 200 KB.",
   "brand.badType": "Tafadhali chagua picha ya PNG, JPG au SVG.",
   "report.exportCsv": "Pakua CSV",
+  "pricing.cta.trial": "Anza kipindi cha majaribio bila malipo cha siku 7",
+  "pricing.trialTerms": "Bure kwa siku 7, kisha {price}. Kadi inahitajika na hutozwa kiotomatiki kipindi cha majaribio kinapoisha isipokuwa ughairi kwanza. Ghairi wakati wowote kupitia Dhibiti malipo. Kipindi cha majaribio cha kila mpango kinaweza kutumika mara moja kwa kila akaunti.",
+  "billing.trialBadge": "Majaribio",
+  "pricing.status.trialing": "Kipindi chako cha majaribio bila malipo kinaisha tarehe {date}. Kadi yako itatozwa wakati huo isipokuwa ughairi kwanza kupitia Dhibiti malipo.",
 };
 export default messages;

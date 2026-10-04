@@ -143,3 +143,12 @@ test("the limit table in SQL matches the limits in the app's plan config", async
     assert.equal(rows[0].max_analyses, p.maxAnalyses, `${p.id} analyses`);
   }
 });
+
+test("trials_used starts empty, is readable by its owner, and cannot be edited by the user", async () => {
+  await db.query("insert into profiles (user_id) values ($1) on conflict do nothing", [B]);
+  await asUser(B);
+  const r = await db.query<{ trials_used: string[] }>("select trials_used from profiles where user_id = $1", [B]);
+  assert.deepEqual(r.rows[0].trials_used, []);
+  await assert.rejects(db.query("update profiles set trials_used = '{}' where user_id = $1", [B]), /permission denied/);
+  await asUser(null);
+});

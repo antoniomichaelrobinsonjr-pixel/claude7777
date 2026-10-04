@@ -368,5 +368,9 @@ const messages: Dict = {
   "brand.tooLarge": "Imej itu lebih besar daripada 200 KB.",
   "brand.badType": "Sila pilih imej PNG, JPG atau SVG.",
   "report.exportCsv": "Muat turun CSV",
+  "pricing.cta.trial": "Mulakan percubaan percuma 7 hari",
+  "pricing.trialTerms": "Percuma selama 7 hari, kemudian {price}. Kad diperlukan dan akan dicaj secara automatik apabila percubaan tamat kecuali anda membatalkannya terlebih dahulu. Anda boleh membatalkan pada bila-bila masa melalui Urus pengebilan. Percubaan bagi setiap pelan hanya boleh digunakan sekali bagi setiap akaun.",
+  "billing.trialBadge": "Percubaan",
+  "pricing.status.trialing": "Percubaan percuma anda tamat pada {date}. Kad anda akan dicaj pada masa itu kecuali anda membatalkannya terlebih dahulu melalui Urus pengebilan.",
 };
 export default messages;

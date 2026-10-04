@@ -1,4 +1,4 @@
-import { buildCheckoutParams, parseCheckoutRequest, type Env, type Profile } from "./stripe-map.ts";
+import { buildCheckoutParams, parseCheckoutRequest, trialEligible, type Env, type Profile } from "./stripe-map.ts";
 import { handleStripeEvent, type StripeEventLike, type WebhookDeps } from "./webhook.ts";
 import { ACCESS_STATUSES } from "./stripe-map.ts";
 
@@ -13,7 +13,7 @@ export interface CheckoutDeps {
   siteUrl: string;
   user: AuthedUser | null;
   body: unknown;
-  loadProfile(userId: string): Promise<Pick<Profile, "stripe_customer_id" | "status" | "plan"> | null>;
+  loadProfile(userId: string): Promise<Pick<Profile, "stripe_customer_id" | "status" | "plan"> & Partial<Pick<Profile, "trials_used">> | null>;
   createSession(params: ReturnType<typeof buildCheckoutParams>): Promise<{ url: string | null }>;
 }
 
@@ -28,6 +28,7 @@ export async function processCheckout(d: CheckoutDeps): Promise<HttpResult> {
   const session = await d.createSession(buildCheckoutParams({
     priceId: req.priceId, plan: req.plan, interval: req.interval, userId: d.user.id,
     email: d.user.email, customerId: profile?.stripe_customer_id ?? null, siteUrl: d.siteUrl, env: d.env,
+    trial: trialEligible(req.plan, profile?.trials_used),
   }));
   return session.url ? { status: 200, body: { url: session.url } } : fail(502, "no_checkout_url");
 }

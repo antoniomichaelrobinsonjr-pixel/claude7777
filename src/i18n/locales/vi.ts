@@ -368,5 +368,9 @@ const messages: Dict = {
   "brand.tooLarge": "Hình ảnh này lớn hơn 200 KB.",
   "brand.badType": "Vui lòng chọn hình ảnh PNG, JPG hoặc SVG.",
   "report.exportCsv": "Tải CSV",
+  "pricing.cta.trial": "Bắt đầu dùng thử miễn phí 7 ngày",
+  "pricing.trialTerms": "Miễn phí trong 7 ngày, sau đó {price}. Cần có thẻ và thẻ sẽ tự động bị tính phí khi kỳ dùng thử kết thúc, trừ khi bạn hủy trước. Bạn có thể hủy bất cứ lúc nào trong mục Quản lý thanh toán. Bản dùng thử của mỗi gói chỉ được dùng một lần cho mỗi tài khoản.",
+  "billing.trialBadge": "Dùng thử",
+  "pricing.status.trialing": "Bản dùng thử miễn phí của bạn kết thúc vào {date}. Thẻ của bạn sẽ bị tính phí vào lúc đó, trừ khi bạn hủy trước trong mục Quản lý thanh toán.",
 };
 export default messages;

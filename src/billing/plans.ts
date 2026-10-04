@@ -108,3 +108,13 @@ export const canCreateAnalysis = (plan: PlanId, existing: number) => {
 
 /** A comp can be added while the analysis has fewer comps than the plan allows. */
 export const canAddComp = (plan: PlanId, compCount: number) => compCount < PLANS[plan].maxComps;
+
+/**
+ * Every paid plan comes with a free trial, once per plan per account, so people can see what each tier does with their
+ * own comps. The strings that mention it ("7-day", "7 days") are written out in every language; a test keeps them in
+ * step with this number.
+ */
+export const TRIAL_DAYS = 7;
+
+/** Whether this account can still start the free trial of a paid plan. `used` is the plans it has already tried. */
+export const trialEligible = (plan: PlanId, used: readonly string[] | null | undefined) => plan !== "starter" && !(used ?? []).includes(plan);

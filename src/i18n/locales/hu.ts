@@ -384,5 +384,9 @@ const messages: Dict = {
   "brand.tooLarge": "A kép nagyobb 200 KB-nál.",
   "brand.badType": "Kérjük, PNG, JPG vagy SVG képet válasszon.",
   "report.exportCsv": "CSV letöltése",
+  "pricing.cta.trial": "7 napos ingyenes próba indítása",
+  "pricing.trialTerms": "7 napig ingyenes, utána {price}. Bankkártya szükséges, amely a próbaidőszak végén automatikusan terhelődik, hacsak előtte nem mondja le. Bármikor lemondhatja a Számlázás kezelése menüpontban. Az egyes csomagok próbaidőszaka fiókonként egyszer használható fel.",
+  "billing.trialBadge": "Próba",
+  "pricing.status.trialing": "Az ingyenes próbaidőszak ezen a napon ér véget: {date}. Ekkor terhelődik a kártyája, hacsak előtte nem mondja le a Számlázás kezelése menüpontban.",
 };
 export default messages;

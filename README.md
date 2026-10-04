@@ -47,6 +47,8 @@ To switch it on:
 4. Add a Stripe webhook to `/api/billing/webhook` for `customer.subscription.created/updated/deleted` and `checkout.session.completed`. Configure the Stripe customer portal.
 5. Set `NEXT_PUBLIC_BILLING_ENABLED=true`.
 
+**Free trials.** Every paid plan (Plus, Pro, Studio) starts with a 7-day free trial, once per plan per account, so people can see what each tier does with their own comps. Checkout always collects a card and Stripe charges it when the trial ends unless the person cancels first (a trial with no card is cancelled by Stripe instead). Eligibility is decided on the server from `profiles.trials_used`, which only the webhook writes, so the request cannot grant or skip a trial, and cancelling does not give a trial back. The length is `TRIAL_DAYS` in `src/billing/plans.ts`; the translated wording says "7" outright, so change the strings too if you change the number.
+
 `NEXT_PUBLIC_BILLING_PREVIEW=1` lets anyone pick a plan on `/pricing` for demos. Never set it in production.
 
 Checkout, webhook and database rules are tested offline (fake Stripe events, real Postgres via PGlite). They have not been run against live Stripe.

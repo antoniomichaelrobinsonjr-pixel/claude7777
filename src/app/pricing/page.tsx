@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n";
 import { n } from "@/i18n/format";
 import { supabase } from "@/lib/supabase";
 import { useEntitlements } from "@/billing/entitlements";
-import { FEATURES, INTERVALS, PLANS, PLAN_IDS, can, monthlyEquivalentCents, yearlySavingsPct, type Interval, type PlanId } from "@/billing/plans";
+import { FEATURES, INTERVALS, PLANS, PLAN_IDS, can, monthlyEquivalentCents, trialEligible, yearlySavingsPct, type Interval, type PlanId } from "@/billing/plans";
 
 const RECOMMENDED: PlanId = "pro";
 
@@ -151,8 +151,11 @@ export default function PricingPage() {
                   <button className="btn w-full justify-center" disabled={busy !== null} onClick={async () => { setBusy("portal"); await call("portal"); setBusy(null); }}>{t("pricing.cta.manage")}</button>
                 ) : (
                   <button className="btn btn-primary w-full justify-center" disabled={busy !== null} onClick={() => choose(id)}>
-                    {busy === id ? t("pricing.cta.working") : t("pricing.cta.choose", { plan: t(`plan.${id}.name`) })}
+                    {busy === id ? t("pricing.cta.working") : trialEligible(id, ent.trialsUsed) ? t("pricing.cta.trial") : t("pricing.cta.choose", { plan: t(`plan.${id}.name`) })}
                   </button>
+                )}
+                {ent.billingEnabled && !current && !subscribed && id !== "starter" && price(id) !== null && (!ent.signedIn || trialEligible(id, ent.trialsUsed)) && (
+                  <p className="muted mt-2 text-xs">{t("pricing.trialTerms", { price: t(`billing.price.${interval}`, { price: price(id)! }) })}</p>
                 )}
               </div>
             </section>
@@ -166,6 +169,7 @@ export default function PricingPage() {
           <p className="muted mt-1">
             {ent.subscription.status === "past_due" ? t("pricing.status.pastDue")
               : ent.subscription.cancelAtPeriodEnd ? t("pricing.status.ends", { date: dateOf(ent.subscription.currentPeriodEnd) })
+              : ent.subscription.status === "trialing" ? t("pricing.status.trialing", { date: dateOf(ent.subscription.currentPeriodEnd) })
               : ent.subscription.currentPeriodEnd ? t("pricing.status.renews", { date: dateOf(ent.subscription.currentPeriodEnd) }) : ""}
           </p>
           <button className="btn mt-3" disabled={busy !== null} onClick={async () => { setBusy("portal"); await call("portal"); setBusy(null); }}>{t("pricing.cta.manage")}</button>

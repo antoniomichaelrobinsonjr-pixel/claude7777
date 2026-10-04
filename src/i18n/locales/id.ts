@@ -368,5 +368,9 @@ const messages: Dict = {
   "brand.tooLarge": "Gambar itu lebih besar dari 200 KB.",
   "brand.badType": "Silakan pilih gambar PNG, JPG atau SVG.",
   "report.exportCsv": "Unduh CSV",
+  "pricing.cta.trial": "Mulai uji coba gratis 7 hari",
+  "pricing.trialTerms": "Gratis selama 7 hari, lalu {price}. Diperlukan kartu, dan kartu akan ditagih otomatis saat uji coba berakhir kecuali Anda membatalkannya lebih dulu. Anda dapat membatalkan kapan saja melalui Kelola penagihan. Uji coba setiap paket hanya dapat digunakan sekali per akun.",
+  "billing.trialBadge": "Uji coba",
+  "pricing.status.trialing": "Uji coba gratis Anda berakhir pada {date}. Kartu Anda akan ditagih saat itu kecuali Anda membatalkannya lebih dulu melalui Kelola penagihan.",
 };
 export default messages;

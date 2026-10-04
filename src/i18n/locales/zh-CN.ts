@@ -368,5 +368,9 @@ const messages: Dict = {
   "brand.tooLarge": "该图片超过 200 KB。",
   "brand.badType": "请选择 PNG、JPG 或 SVG 图片。",
   "report.exportCsv": "下载 CSV",
+  "pricing.cta.trial": "开始 7 天免费试用",
+  "pricing.trialTerms": "前 7 天免费，之后 {price}。需要绑定银行卡，试用结束时将自动扣款，除非您事先取消。您可随时在“管理账单”中取消。每个套餐的试用在每个账户下只能使用一次。",
+  "billing.trialBadge": "试用",
+  "pricing.status.trialing": "您的免费试用将于 {date} 结束。届时将从您的银行卡扣款，除非您事先在“管理账单”中取消。",
 };
 export default messages;
