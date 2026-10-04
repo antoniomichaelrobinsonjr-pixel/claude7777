@@ -167,7 +167,7 @@ export default function ReportPage() {
           </Section>
 
           <Section title="The comparable sales">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Comparable sales table">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="muted text-xs uppercase">
                   <tr><th className="py-2 pr-3">Property</th><th className="pr-3">Sold</th><th className="pr-3">Distance</th><th className="pr-3 text-right">Sale price</th><th className="pr-3 text-right">Net adj.</th><th className="pr-3 text-right">Adjusted</th><th className="text-right">Weight</th></tr>
@@ -212,7 +212,7 @@ export default function ReportPage() {
                   <strong>S</strong> is the subject property; numbers match the comps in order. The gold ring is one mile from the subject. Positions come from an address lookup and are only as precise as the match listed below. Map data © OpenStreetMap contributors.
                 </p>
                 <details className="mt-2 text-sm">
-                  <summary className="muted cursor-pointer">View as table</summary>
+                  <summary className="muted tap cursor-pointer">View as table</summary>
                   <table className="mt-2 w-full min-w-[520px] text-left">
                     <thead className="muted text-xs uppercase"><tr><th className="py-1 pr-3">#</th><th className="pr-3">Property</th><th className="pr-3">Matched address</th><th className="text-right">Map distance</th></tr></thead>
                     <tbody>
@@ -246,7 +246,7 @@ export default function ReportPage() {
               <li>Comps needing smaller adjustments count more: <em>weight = 1 ÷ (1 + gross adjustment % ÷ 10)</em>. The indicated value is the weighted average of the adjusted prices.</li>
               <li>The range is the lowest and highest adjusted price, so it shows how far the comps disagree.</li>
             </ol>
-            <div className="mt-4 overflow-x-auto">
+            <div className="mt-4 overflow-x-auto" tabIndex={0} role="region" aria-label="Adjustment breakdown table">
               <table className="w-full min-w-[560px] text-left text-sm">
                 <thead className="muted text-xs uppercase">
                   <tr><th className="py-2 pr-3">Property</th><th className="pr-3 text-right">Size</th><th className="pr-3 text-right">Beds</th><th className="pr-3 text-right">Baths</th><th className="pr-3 text-right">Age</th><th className="pr-3 text-right">Other</th><th className="text-right">Net</th></tr>

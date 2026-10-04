@@ -1,8 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CompEvidence, Trend } from "@/lib/report";
 
-const W = 640, H = 300, ML = 58, MR = 18, MT = 18, MB = 40;
+const ML = 58, MR = 18, MT = 18, MB = 40;
+
+/** Track the container width so the SVG is drawn at real pixel size and text never shrinks on small screens. */
+function useWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(640);
+  useEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver((e) => setW(Math.max(280, Math.round(e[0].contentRect.width))));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w] as const;
+}
 
 const niceStep = (range: number, ticks: number) => {
   const raw = range / ticks;
@@ -16,6 +29,8 @@ const dateFull = (ts: number) => new Date(ts).toLocaleDateString("en-US", { year
 /** Sale price per sq ft against sale date. One series, so no legend; the title names it. */
 export function TrendChart({ trend }: { trend: Trend }) {
   const [hover, setHover] = useState<string | null>(null);
+  const [boxRef, W] = useWidth();
+  const H = W < 480 ? 260 : 300;
   const pts = trend.points;
   if (pts.length === 0) return <p className="muted text-sm">No comps have both a sale date and a size, so there is nothing to plot.</p>;
 
@@ -40,17 +55,17 @@ export function TrendChart({ trend }: { trend: Trend }) {
 
   return (
     <div>
-      <div className="relative">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Sale price per square foot by sale date">
+      <div className="relative" ref={boxRef}>
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label="Sale price per square foot by sale date">
           {yTicks.map((v) => (
             <g key={v}>
               <line x1={ML} x2={W - MR} y1={sy(v)} y2={sy(v)} stroke="var(--border)" strokeWidth="1" />
-              <text x={ML - 8} y={sy(v) + 4} textAnchor="end" fontSize="11" fill="var(--muted)">${Math.round(v).toLocaleString("en-US")}</text>
+              <text x={ML - 8} y={sy(v) + 4} textAnchor="end" fontSize="12" fill="var(--muted)">${Math.round(v).toLocaleString("en-US")}</text>
             </g>
           ))}
           <line x1={ML} x2={W - MR} y1={H - MB} y2={H - MB} stroke="var(--border)" strokeWidth="1" />
           {xTicks.map((t) => (
-            <text key={t} x={sx(t)} y={H - MB + 20} textAnchor="middle" fontSize="11" fill="var(--muted)">{dateLabel(t)}</text>
+            <text key={t} x={sx(t)} y={H - MB + 20} textAnchor="middle" fontSize="12" fill="var(--muted)">{dateLabel(t)}</text>
           ))}
           {line && (
             <line x1={sx(minTs)} y1={sy(line.y0)} x2={sx(maxTs)} y2={sy(line.y1)} stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" />
@@ -59,7 +74,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
             <g key={p.id}>
               <circle cx={sx(p.ts)} cy={sy(p.ppsf)} r="5" fill="var(--accent)" stroke="var(--surface)" strokeWidth="2" />
               <circle
-                cx={sx(p.ts)} cy={sy(p.ppsf)} r="14" fill="transparent" tabIndex={0}
+                cx={sx(p.ts)} cy={sy(p.ppsf)} r="24" fill="transparent" tabIndex={0} role="img"
                 aria-label={`${p.address}: $${p.ppsf.toFixed(0)} per square foot, sold ${dateFull(p.ts)}`}
                 onPointerEnter={() => setHover(p.id)} onPointerLeave={() => setHover(null)}
                 onFocus={() => setHover(p.id)} onBlur={() => setHover(null)}
@@ -94,7 +109,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
         )}
       </p>
       <details className="mt-2 text-sm">
-        <summary className="muted cursor-pointer">View as table</summary>
+        <summary className="muted tap cursor-pointer">View as table</summary>
         <table className="mt-2 w-full text-left">
           <thead className="muted text-xs uppercase"><tr><th className="py-1 pr-3">Property</th><th className="pr-3">Sold</th><th className="text-right">$ per sq ft</th></tr></thead>
           <tbody>
@@ -124,7 +139,7 @@ export function DistanceBars({ comps }: { comps: CompEvidence[] }) {
         {withDist.map((c) => (
           <div key={c.id} className="contents">
             <div className="truncate" title={c.address}>{c.address}</div>
-            <div className="relative h-6" tabIndex={0} title={`${c.address}: ${c.distanceMi!.toFixed(1)} miles from the subject`} aria-label={`${c.address}: ${c.distanceMi!.toFixed(1)} miles from the subject`}>
+            <div className="relative h-6" tabIndex={0} role="img" title={`${c.address}: ${c.distanceMi!.toFixed(1)} miles from the subject`} aria-label={`${c.address}: ${c.distanceMi!.toFixed(1)} miles from the subject`}>
               <div
                 className="absolute left-0 top-1 h-4 transition hover:brightness-110"
                 style={{ width: pos(c.distanceMi!), minWidth: 4, background: "var(--accent)", borderRadius: "0 4px 4px 0" }}
@@ -144,7 +159,7 @@ export function DistanceBars({ comps }: { comps: CompEvidence[] }) {
         Distance only. Direction from the subject is not known, so this is not a map.{missing > 0 ? ` ${missing} comp${missing === 1 ? "" : "s"} with no distance entered ${missing === 1 ? "is" : "are"} not shown.` : ""}
       </p>
       <details className="mt-2 text-sm">
-        <summary className="muted cursor-pointer">View as table</summary>
+        <summary className="muted tap cursor-pointer">View as table</summary>
         <table className="mt-2 w-full text-left">
           <thead className="muted text-xs uppercase"><tr><th className="py-1 pr-3">Property</th><th className="text-right">Miles</th></tr></thead>
           <tbody>

@@ -85,7 +85,7 @@ function RangeBar({ a }: { a: Analysis }) {
             style={{ left: pos(r.adjustedPrice), background: "var(--surface)", borderColor: "var(--brand)" }}
           />
         ))}
-        <span className="absolute -top-7 -translate-x-1/2 text-center text-[10px] font-semibold uppercase" style={{ left: `clamp(16%, ${a.high > a.low ? pos(a.weighted) : "50%"}, 84%)`, color: "var(--accent)" }}>
+        <span className="absolute -top-7 -translate-x-1/2 text-center text-xs font-semibold uppercase" style={{ left: `clamp(16%, ${a.high > a.low ? pos(a.weighted) : "50%"}, 84%)`, color: "var(--accent)" }}>
           ▼ Weighted
         </span>
       </div>
@@ -231,7 +231,8 @@ export default function ProjectPage() {
         </p>
         <div className="mt-3 h-px" style={{ background: "linear-gradient(90deg, var(--gold-b), transparent)" }} />
       </header>
-      <Link href="/" className="muted no-print inline-block text-sm hover:underline">← All analyses</Link>
+      <Link href="/" className="muted tap no-print -ms-1 text-sm hover:underline">← All analyses</Link>
+      <h1 className="sr-only">{project.name || "Analysis"}</h1>
       {isBlank && (
         <div className="card no-print flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
           <span>Fill in the steps below, or just exploring?</span>
@@ -351,12 +352,12 @@ export default function ProjectPage() {
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-semibold">Comp {i + 1}</span>
                     <div className="no-print flex items-center gap-4 text-sm">
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> Use
+                      <label className="tap flex items-center gap-2">
+                        <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={c.included} onChange={(e) => setComp(c.id, { included: e.target.checked })} /> Use
                       </label>
-                      <button className="muted hover:underline" onClick={() => duplicateComp(c.id)}>Duplicate</button>
+                      <button className="muted tap hover:underline" onClick={() => duplicateComp(c.id)}>Duplicate</button>
                       <button
-                        className="muted hover:underline"
+                        className="muted tap hover:underline"
                         onClick={() => {
                           setRemoved({ comp: c, index: i });
                           set({ comps: project.comps.filter((x) => x.id !== c.id) });
@@ -432,7 +433,7 @@ export default function ProjectPage() {
                 <dl className="grid grid-cols-3 gap-2 px-5 pb-5 text-center">
                   {([["Low", analysis.low], ["Median", analysis.median], ["High", analysis.high]] as const).map(([l, v]) => (
                     <div key={l} className="rounded-xl p-2" style={{ background: "var(--surface-2)" }}>
-                      <dt className="muted text-[10px] font-semibold uppercase">{l}</dt>
+                      <dt className="muted text-xs font-semibold uppercase">{l}</dt>
                       <dd className="text-sm font-bold">{usd(v)}</dd>
                     </div>
                   ))}
@@ -442,7 +443,7 @@ export default function ProjectPage() {
             <p className="muted border-t px-5 py-3 text-xs leading-5" style={{ borderColor: "var(--border)" }}>
               <strong>How it's calculated:</strong> each comp's price is adjusted toward your subject, then averaged. Comps needing fewer adjustments count more.
             </p>
-            <p className="muted border-t p-4 text-[11px] leading-4" style={{ borderColor: "var(--border)" }}>
+            <p className="muted border-t p-4 text-xs leading-5" style={{ borderColor: "var(--border)" }}>
               Comparative market analysis for discussion only. Not an appraisal; not for lending decisions.
             </p>
           </div>

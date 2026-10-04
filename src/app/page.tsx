@@ -69,7 +69,7 @@ export default function Home() {
                   <div className="muted text-xs">{a.count} comp{a.count === 1 ? "" : "s"} used</div>
                 </a>
                 <button
-                  className="muted self-start text-xs hover:underline"
+                  className="muted tap -mb-2 -ms-1 self-start text-sm hover:underline"
                   onClick={async () => { if (confirm("Delete this analysis?")) { await deleteProject(p.id); load(); } }}
                 >Delete</button>
               </li>

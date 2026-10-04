@@ -8,10 +8,10 @@
   --surface-2: #f1ece0;
   --border: #e6dfcf;
   --ink: #121a33;
-  --muted: #6b6f80;
+  --muted: #626678;
   --brand: #1c2754;
   --brand-ink: #f3dc9c;
-  --accent: #9a6f24;
+  --accent: #8a6118;
   --gold-a: #f0cf7e;
   --gold-b: #c9973f;
   --gtext-a: #c9973f;
@@ -50,6 +50,11 @@
 }
 
 html { color-scheme: light dark; }
+
+/* Visible keyboard focus everywhere (the browser default is a thin dark line that vanishes on navy and in dark mode). */
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+.input:focus-visible { outline: none; }
+.sr-only-focusable:focus { position: static; }
 body {
   background:
     radial-gradient(900px 400px at 10% -10%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
@@ -61,6 +66,8 @@ body {
 }
 
 @layer components {
+  /* Text-style controls still get a comfortable touch target. */
+  .tap { display: inline-flex; align-items: center; min-height: 40px; padding-inline: 4px; }
   .display { font-family: ui-serif, Georgia, "Times New Roman", serif; letter-spacing: -0.015em; }
   .gold-ink { background: linear-gradient(135deg, var(--gtext-a), var(--gtext-b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .gold-text { background: linear-gradient(135deg, var(--gold-a), var(--gold-b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -89,8 +96,8 @@ body {
   /* Always print on the light palette, even if the screen is in dark mode. */
   :root {
     --bg: #fff; --surface: #fffdf8; --surface-2: #f1ece0; --border: #e6dfcf;
-    --ink: #121a33; --muted: #6b6f80; --brand: #1c2754; --brand-ink: #f3dc9c;
-    --accent: #9a6f24; --gold-a: #f0cf7e; --gold-b: #c9973f; --gtext-a: #c9973f; --gtext-b: #8a6118;
+    --ink: #121a33; --muted: #626678; --brand: #1c2754; --brand-ink: #f3dc9c;
+    --accent: #8a6118; --gold-a: #f0cf7e; --gold-b: #c9973f; --gtext-a: #c9973f; --gtext-b: #8a6118;
     --panel-a: #1c2754; --panel-b: #0d1330; --panel-ink: #f6e7b8; --warn: #b45309; --ok: #2f7d4f;
   }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

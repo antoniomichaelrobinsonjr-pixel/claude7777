@@ -13,7 +13,12 @@ export default function Login() {
   }, []);
 
   if (!supabase)
-    return <p className="card mx-auto max-w-md p-5 text-sm" style={{ color: "var(--warn)" }}>Accounts are off: Supabase is not configured. See the README.</p>;
+    return (
+      <div className="card mx-auto max-w-md space-y-2 p-5">
+        <h1 className="text-xl font-bold">Accounts</h1>
+        <p className="text-sm" style={{ color: "var(--warn)" }}>Accounts are off: Supabase is not configured. See the README.</p>
+      </div>
+    );
 
   async function submit(mode: "in" | "up") {
     const fn = mode === "in" ? supabase!.auth.signInWithPassword : supabase!.auth.signUp;
@@ -26,6 +31,7 @@ export default function Login() {
   if (user)
     return (
       <div className="card mx-auto max-w-sm space-y-4 p-6">
+        <h1 className="text-xl font-bold">Your account</h1>
         <p>Signed in as <strong>{user}</strong></p>
         <button className="btn" onClick={async () => { await supabase!.auth.signOut(); location.href = "/"; }}>Sign out</button>
       </div>
