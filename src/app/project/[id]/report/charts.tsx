@@ -26,7 +26,7 @@ const niceStep = (range: number, ticks: number) => {
   return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
 };
 /** Sale price per sq ft against sale date. One series, so no legend; the title names it. */
-export function TrendChart({ trend }: { trend: Trend }) {
+export function TrendChart({ trend, land = false }: { trend: Trend; land?: boolean }) {
   const { t, tm, rich, usd, num, date, info } = useI18n();
   const dateLabel = (ts: number) => date(ts, { month: "short", year: "2-digit" });
   const dateFull = (ts: number) => date(ts, { year: "numeric", month: "short", day: "numeric" });
@@ -92,7 +92,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
             style={{ left: `${(sx(hovered.ts) / W) * 100}%`, top: `${(sy(hovered.ppsf) / H) * 100 - 3}%`, background: "var(--surface)", borderColor: "var(--border)" }}
           >
             <div dir={info.dir}>
-              <div className="text-base font-bold">{t("chart.perSqft", { price: usd(hovered.ppsf) })}</div>
+              <div className="text-base font-bold">{t(land ? "land.chart.perSqft" : "chart.perSqft", { price: usd(hovered.ppsf) })}</div>
               <div className="muted"><bdi>{hovered.address || t("common.unnamedComp")}</bdi></div>
               <div className="muted">{t("chart.sold", { date: dateFull(hovered.ts) })}</div>
             </div>
@@ -105,7 +105,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
         ) : (
           <>
             {rich(
-              Math.abs(trend.slopePctPerMonth) < 0.1 ? "trend.flat" : trend.slopePctPerMonth > 0 ? "trend.rising" : "trend.falling",
+              `${land ? "land." : ""}${Math.abs(trend.slopePctPerMonth) < 0.1 ? "trend.flat" : trend.slopePctPerMonth > 0 ? "trend.rising" : "trend.falling"}`,
               { pct: num(n.dec1(Math.abs(trend.slopePctPerMonth))) },
               { b: (x, i) => <strong key={i}>{x}</strong> },
             )}{" "}
@@ -116,7 +116,7 @@ export function TrendChart({ trend }: { trend: Trend }) {
       <details className="mt-2 text-sm">
         <summary className="muted tap cursor-pointer">{t("common.viewTable")}</summary>
         <table className="mt-2 w-full text-start">
-          <thead className="muted text-xs uppercase"><tr><th className="py-1 pe-3 text-start">{t("col.property")}</th><th className="pe-3 text-start">{t("col.sold")}</th><th className="text-end">{t("col.perSqft")}</th></tr></thead>
+          <thead className="muted text-xs uppercase"><tr><th className="py-1 pe-3 text-start">{t("col.property")}</th><th className="pe-3 text-start">{t("col.sold")}</th><th className="text-end">{t(land ? "land.col.perSqft" : "col.perSqft")}</th></tr></thead>
           <tbody>
             {pts.map((p) => (
               <tr key={p.id} className="border-t" style={{ borderColor: "var(--border)" }}>

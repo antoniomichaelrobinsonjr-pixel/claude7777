@@ -24,12 +24,15 @@ export type Feature =
   | "brandedReport"    // "Prepared for / by" lines on the report
   | "csvExport"        // Download the comps and adjustments as CSV
   | "whiteLabel"       // Your own name and logo on the report
+  | "sellerReport"     // Seller report: list price against the comps, and what the seller would take home
+  | "buyerReport"      // Buyer report: asking price against the comps, and what to question
+  | "ownerReport"      // Ownership report: value over the years held, against the market, with scenarios
   | "marketUpdates"    // Daily market data for the subject's country, and how far it has moved since each sale
   | "prioritySupport"; // Faster replies from support (a service promise, not code)
 
 export const FEATURES: Feature[] = [
   "addressLookup", "printSummary", "report", "reportTrend", "reportDistance", "reportGrade",
-  "reportMap", "reportWeights", "brandedReport", "csvExport", "whiteLabel", "marketUpdates", "prioritySupport",
+  "reportMap", "reportWeights", "brandedReport", "csvExport", "whiteLabel", "sellerReport", "buyerReport", "ownerReport", "marketUpdates", "prioritySupport",
 ];
 
 export interface Plan {
@@ -44,7 +47,7 @@ export interface Plan {
 }
 
 const PLUS: Feature[] = ["addressLookup", "printSummary", "report", "reportTrend", "reportDistance", "marketUpdates"];
-const PRO: Feature[] = [...PLUS, "reportGrade", "reportMap", "reportWeights", "brandedReport", "csvExport"];
+const PRO: Feature[] = [...PLUS, "reportGrade", "reportMap", "reportWeights", "brandedReport", "csvExport", "sellerReport", "buyerReport", "ownerReport"];
 const STUDIO: Feature[] = [...PRO, "whiteLabel", "prioritySupport"];
 
 export const PLANS: Record<PlanId, Plan> = {

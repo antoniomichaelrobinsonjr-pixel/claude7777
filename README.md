@@ -62,6 +62,19 @@ Plus and above (open to everyone while billing is off). Pick the property's coun
 - **Setup:** run `supabase/market.sql`; set `CRON_SECRET`; have a scheduler call `GET /api/cron/market` daily with `Authorization: Bearer $CRON_SECRET`. `.github/workflows/market-refresh.yml` does this (add `MARKET_CRON_URL` and `CRON_SECRET` as repository secrets), or use Vercel Cron. The job saves nothing unless the whole download looks sane, so a bad day at the source leaves the previous data in place.
 - **Not yet verified against the live BIS service.** The download and parser are tested on sample files written from the BIS documentation, but this build environment cannot reach stats.bis.org. Run the endpoint once after deploying and check the response; if the BIS has changed its address, set `MARKET_BIS_URL`.
 
+## Reports for sellers, buyers and owners, and land
+
+Pro and above (open to everyone while billing is off). The report page has tabs for four reports made from the same analysis:
+
+- **Investor** — the full valuation support report.
+- **Seller** — where a planned list price sits against the range the comps support, what the seller would take home after agent fees, other costs and any loan payoff, and the sales buyers will compare the property with.
+- **Buyer** — the asking price against the comps (percent above or below the indicated value, the gap to talk about, and price per sq ft or acre against the comps' median), each comp with its flags, and a checklist of what comparable sales cannot tell you.
+- **Ownership** — what the owner paid and when, the gain, average yearly growth, and how the property compares with its country's price index since purchase (needs the market data below and a country). Next to it, three scenarios (low, middle, high yearly growth, set by the owner) carried forward 5, 10 or 20 years.
+
+The scenarios apply the growth rates the owner chooses to today's indicated value. They show the arithmetic and are labelled as not a forecast. The past line carries today's indicated value back using the national index (quarterly), so it shows how the market moved, not an appraisal for each year. Nothing here is an appraisal, and every page says so.
+
+**Land.** Set *Property type* to Land on an analysis: size is in acres, the only adjustment rate is dollars per acre (plus the manual adjustment), and bedrooms, bathrooms and age are hidden and ignored. Reports, the trend chart, the CSV and the buyer checklist switch to acres and land wording.
+
 ## Not yet built (later phases in the plan)
 Server-rendered branded PDFs, Stripe billing, CSV import, comp-data APIs, teams.
 

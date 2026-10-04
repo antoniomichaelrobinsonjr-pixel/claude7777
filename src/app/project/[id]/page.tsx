@@ -10,7 +10,7 @@ import { countryOptions } from "@/market/countries";
 import { MarketPanel } from "@/market/panel";
 import { readMoney, showMoney, type Vars } from "@/i18n/format";
 import { DEFAULT_GEOCODER_URL, GEOCODE_DELAY_MS, geocodeAddress, haversineMiles, validGeo } from "@/lib/geo";
-import { analyze, exampleData, newComp, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
+import { analyze, defaultRatesFor, exampleData, isLand, newComp, type Analysis, type Comp, type GeoPoint, type Project, type Rates, type Subject } from "@/lib/comps";
 
 function Num({ label, value, onChange, step }: { label: string; value: number; onChange: (n: number) => void; step?: number }) {
   return (
@@ -160,10 +160,18 @@ export default function ProjectPage() {
   const lockedCount = ent.lockedComps(project);
   const atCompLimit = !ent.canAddComp(project.comps.length);
   const isBlank = isBlankProject(project);
+  const land = isLand(project.subject);
+  /** The wording for a land analysis where it differs (acres instead of square feet, no beds or baths). */
+  const lk = (key: string) => (land ? `land.${key}` : key);
+  function changeKind(kind: "home" | "land") {
+    const wasDefault = (Object.keys(project!.rates) as (keyof Rates)[]).every((k) => project!.rates[k] === defaultRatesFor(project!.subject)[k]);
+    const subject = { ...project!.subject, kind };
+    set({ subject, ...(wasDefault ? { rates: defaultRatesFor(subject) } : {}) });
+  }
   // In guided mode only the current step shows; printing always shows everything.
   const show = (n: number) => (!guided || step === n ? "" : "hidden print:block");
   const stepHint =
-    step === 1 && !project.subject.sqft ? t("hint.sqft") :
+    step === 1 && !project.subject.sqft ? t(lk("hint.sqft")) :
     step === 3 && analysis.count === 0 ? t("hint.price") : "";
   const canNext = !stepHint;
 
@@ -318,20 +326,26 @@ export default function ProjectPage() {
                   {countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
                 </select>
               </label>
-              <Num label={t("field.sqft")} value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
-              <Num label={t("field.beds")} value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />
-              <Num label={t("field.baths")} step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} />
-              <Num label={t("field.yearBuilt")} value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} />
+              <label className="field col-span-2 md:col-span-2">{t("field.propertyType")}
+                <select className="input" value={land ? "land" : "home"} onChange={(e) => changeKind(e.target.value === "land" ? "land" : "home")}>
+                  <option value="home">{t("type.home")}</option>
+                  <option value="land">{t("type.land")}</option>
+                </select>
+              </label>
+              <Num label={t(lk("field.sqft"))} step={land ? 0.01 : 1} value={project.subject.sqft} onChange={(n) => setSubject({ sqft: n })} />
+              {!land && <Num label={t("field.beds")} value={project.subject.beds} onChange={(n) => setSubject({ beds: n })} />}
+              {!land && <Num label={t("field.baths")} step={0.5} value={project.subject.baths} onChange={(n) => setSubject({ baths: n })} />}
+              {!land && <Num label={t("field.yearBuilt")} value={project.subject.yearBuilt} onChange={(n) => setSubject({ yearBuilt: n })} />}
             </div>
           </section>
 
           <section className={`card no-print p-5 ${show(2)}`}>
             <Step n={2} title={t("step2.title")} hint={t("step2.hint")} />
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Money label={t("rate.sqft")} value={project.rates.perSqft} onChange={(n) => setRates({ perSqft: n })} />
-              <Money label={t("rate.bed")} value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} />
-              <Money label={t("rate.bath")} value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} />
-              <Money label={t("rate.year")} value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />
+              <Money label={t(lk("rate.sqft"))} value={project.rates.perSqft} onChange={(n) => setRates({ perSqft: n })} />
+              {!land && <Money label={t("rate.bed")} value={project.rates.perBed} onChange={(n) => setRates({ perBed: n })} />}
+              {!land && <Money label={t("rate.bath")} value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} />}
+              {!land && <Money label={t("rate.year")} value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />}
             </div>
             <label className="field mt-3 block">{t("ratesBasis.label")} <span className="font-normal">{t("ratesBasis.hint")}</span>
               <input className="input" dir="auto" placeholder={t("ratesBasis.placeholder")} value={project.ratesBasis ?? ""} onChange={(e) => set({ ratesBasis: e.target.value })} />
@@ -414,10 +428,10 @@ export default function ProjectPage() {
                     <label className="field">{t("comp.saleDate")}
                       <input className="input" type="date" value={c.saleDate} onChange={(e) => setComp(c.id, { saleDate: e.target.value })} />
                     </label>
-                    <Num label={t("field.sqft")} value={c.sqft} onChange={(n) => setComp(c.id, { sqft: n })} />
-                    <Num label={t("field.beds")} value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} />
-                    <Num label={t("field.baths")} step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} />
-                    <Num label={t("field.yearBuilt")} value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />
+                    <Num label={t(lk("field.sqft"))} step={land ? 0.01 : 1} value={c.sqft} onChange={(n) => setComp(c.id, { sqft: n })} />
+                    {!land && <Num label={t("field.beds")} value={c.beds} onChange={(n) => setComp(c.id, { beds: n })} />}
+                    {!land && <Num label={t("field.baths")} step={0.5} value={c.baths} onChange={(n) => setComp(c.id, { baths: n })} />}
+                    {!land && <Num label={t("field.yearBuilt")} value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />}
                     <Num label={c.distanceComputed ? t("comp.distanceMap") : t("comp.distance")} step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n, distanceComputed: false })} />
                     <Money label={t("comp.otherAdj")} negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
                     <label className="field col-span-2">{t("comp.source")} <span className="font-normal">{t("comp.sourceHint")}</span>

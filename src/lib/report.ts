@@ -1,4 +1,4 @@
-import { analyze, DEFAULT_RATES, type GeoPoint, type Project } from "./comps.ts";
+import { analyze, defaultRatesFor, isLand, type GeoPoint, type Project } from "./comps.ts";
 import { haversineMiles, validGeo } from "./geo.ts";
 import { msg, n as num, type Msg } from "../i18n/format.ts";
 
@@ -111,7 +111,7 @@ export function resolveWeights(w: Project["checkWeights"]): Record<FactorKey, nu
 
 const MONTH_MS = 30.4375 * 86_400_000;
 
-function buildTrend(rows: { comp: { id: string; address: string; salePrice: number; sqft: number; saleDate: string } }[], asOf: Date): Trend {
+function buildTrend(rows: { comp: { id: string; address: string; salePrice: number; sqft: number; saleDate: string } }[], asOf: Date, prefix = ""): Trend {
   const points: TrendPoint[] = rows
     .map((r) => ({ id: r.comp.id, address: r.comp.address, ts: Date.parse(r.comp.saleDate), ppsf: r.comp.sqft > 0 ? r.comp.salePrice / r.comp.sqft : NaN }))
     .filter((p) => Number.isFinite(p.ts) && p.ts <= asOf.getTime() && Number.isFinite(p.ppsf) && p.ppsf > 0)
@@ -136,13 +136,14 @@ function buildTrend(rows: { comp: { id: string; address: string; salePrice: numb
     r2,
     intercept,
     slopePerMs: slope,
-    note: r2 === null ? msg("trend.note.fitNoR2", { count: points.length }) : msg("trend.note.fit", { count: points.length, pct: num.pct0(r2 * 100) }),
+    note: r2 === null ? msg("trend.note.fitNoR2", { count: points.length }) : msg(`${prefix}trend.note.fit`, { count: points.length, pct: num.pct0(r2 * 100) }),
   };
 }
 
 export function buildReport(project: Project, asOf: Date = new Date()): Report {
   const a = analyze(project);
   const { subject, rates } = project;
+  const landPrefix = isLand(subject) ? "land." : "";
   const med = a.count ? median(a.rows.map((r) => r.adjustedPrice)) : 0;
 
   const subjectGeo = validGeo(subject.geo, subject.address);
@@ -244,7 +245,8 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
   };
   let score = Math.round(weighted(weights));
   let equalWeightScore = Math.round(weighted({ count: 1, recency: 1, proximity: 1, similarity: 1, consistency: 1 }));
-  const usingDefaultRates = (Object.keys(DEFAULT_RATES) as (keyof typeof DEFAULT_RATES)[]).every((k) => rates[k] === DEFAULT_RATES[k]);
+  const defaults = defaultRatesFor(subject);
+  const usingDefaultRates = (Object.keys(defaults) as (keyof typeof defaults)[]).every((k) => rates[k] === defaults[k]);
   const caps: Msg[] = [];
   if (n < 3) { score = Math.min(score, 55); equalWeightScore = Math.min(equalWeightScore, 55); caps.push(msg("cap.fewComps")); }
   if (usingDefaultRates && !project.ratesBasis?.trim()) {
@@ -266,9 +268,9 @@ export function buildReport(project: Project, asOf: Date = new Date()): Report {
     if (mapped < n) limitations.push(msg("lim.notOnMap", { count: n - mapped, total: n }));
     if (comps.some((c) => c.geo && !c.geo.precise)) limitations.push(msg("lim.areaMatches"));
   }
-  const trend = buildTrend(a.rows, asOf);
+  const trend = buildTrend(a.rows, asOf, landPrefix);
   if (trend.slopePctPerMonth !== null && Math.abs(trend.slopePctPerMonth) >= 0.5 && (trend.r2 ?? 0) >= 0.5)
-    limitations.push(msg(trend.slopePctPerMonth > 0 ? "lim.trendRising" : "lim.trendFalling", { pct: num.dec1(Math.abs(trend.slopePctPerMonth)) }));
+    limitations.push(msg(`${landPrefix}${trend.slopePctPerMonth > 0 ? "lim.trendRising" : "lim.trendFalling"}`, { pct: num.dec1(Math.abs(trend.slopePctPerMonth)) }));
   if (customWeights) limitations.push(msg("lim.customWeights", { score: equalWeightScore, grade: gradeFor(equalWeightScore) }));
   limitations.push(msg("lim.timing"));
   limitations.push(msg("lim.notAppraisal"));

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProject, saveProject } from "@/lib/storage";
-import { analyze, type Project } from "@/lib/comps";
+import { analyze, isLand, type Project } from "@/lib/comps";
 import { buildReport, type Grade } from "@/lib/report";
 import { useI18n } from "@/i18n";
 import { n } from "@/i18n/format";
@@ -14,6 +14,7 @@ import { MarketPanel } from "@/market/panel";
 import { BRAND_KEY, checkLogo, parseBrand, type Brand } from "@/billing/brand";
 import { safeFileName, toCsv } from "@/lib/csv";
 import { DistanceBars, TrendChart } from "./charts";
+import { ReportTabs } from "../report-tabs";
 
 const MapView = dynamic(() => import("./map"), {
   ssr: false,
@@ -74,6 +75,8 @@ export default function ReportPage() {
       </div>
     );
   }
+  const land = isLand(project.subject);
+  const lk = (key: string) => (land ? `land.${key}` : key);
   const showGrade = ent.can("reportGrade");
   const whiteLabel = ent.can("whiteLabel") && (brand.name.trim() !== "" || brand.logo !== null);
   const product = whiteLabel && brand.name.trim() ? brand.name.trim() : "CompPilot";
@@ -92,14 +95,14 @@ export default function ReportPage() {
   }
   function downloadCsv() {
     const rows: (string | number)[][] = [[
-      t("field.address"), t("comp.salePrice"), t("comp.saleDate"), t("field.sqft"), t("field.beds"), t("field.baths"), t("field.yearBuilt"),
+      t("field.address"), t("comp.salePrice"), t("comp.saleDate"), t(lk("field.sqft")), ...(land ? [] : [t("field.beds"), t("field.baths"), t("field.yearBuilt")]),
       t("comp.distance"), t("comp.otherAdj"), t("comp.source"), t("comp.netAdj"), t("comp.adjustedPrice"), t("col.weight"),
     ]];
     const wsum = analysis!.rows.reduce((s, r) => s + r.weight, 0) || 1;
     const dist = new Map(report!.comps.map((c) => [c.id, c.distanceMi]));
     for (const r of analysis!.rows) {
       const c = r.comp;
-      rows.push([c.address, c.salePrice, c.saleDate, c.sqft, c.beds, c.baths, c.yearBuilt, dist.get(c.id) ?? "", c.otherAdj, c.source ?? "", Math.round(r.netAdj), Math.round(r.adjustedPrice), Math.round((r.weight / wsum) * 1000) / 10]);
+      rows.push([c.address, c.salePrice, c.saleDate, c.sqft, ...(land ? [] : [c.beds, c.baths, c.yearBuilt]), dist.get(c.id) ?? "", c.otherAdj, c.source ?? "", Math.round(r.netAdj), Math.round(r.adjustedPrice), Math.round((r.weight / wsum) * 1000) / 10]);
     }
     const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -131,6 +134,7 @@ export default function ReportPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <ReportTabs id={project.id} current="investor" />
       <div className="no-print card flex flex-wrap items-end gap-3 p-4">
         <Link href={`/project/${project.id}`} className="btn">{t("report.back")}</Link>
         {ent.can("brandedReport") ? (
@@ -296,8 +300,8 @@ export default function ReportPage() {
           </Section>
 
           {ent.can("reportTrend") ? (
-            <Section title={t("trend.title")}>
-              <TrendChart trend={report.trend} />
+            <Section title={t(lk("trend.title"))}>
+              <TrendChart trend={report.trend} land={land} />
             </Section>
           ) : <UpgradeNotice feature="reportTrend" />}
 
@@ -360,16 +364,16 @@ export default function ReportPage() {
               <table className="w-full min-w-[560px] text-start text-sm">
                 <thead className="muted text-xs uppercase">
                   <tr>
-                    <th className="py-2 pe-3 text-start">{t("col.property")}</th><th className="pe-3 text-end">{t("col.size")}</th><th className="pe-3 text-end">{t("col.beds")}</th>
-                    <th className="pe-3 text-end">{t("col.baths")}</th><th className="pe-3 text-end">{t("col.age")}</th><th className="pe-3 text-end">{t("col.extra")}</th><th className="text-end">{t("col.net")}</th>
+                    <th className="py-2 pe-3 text-start">{t("col.property")}</th><th className="pe-3 text-end">{t("col.size")}</th>{!land && <th className="pe-3 text-end">{t("col.beds")}</th>}
+                    {!land && <th className="pe-3 text-end">{t("col.baths")}</th>}{!land && <th className="pe-3 text-end">{t("col.age")}</th>}<th className="pe-3 text-end">{t("col.extra")}</th><th className="text-end">{t("col.net")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {analysis.rows.map((r) => (
                     <tr key={r.comp.id} className="border-t" style={{ borderColor: "var(--border)" }}>
                       <td className="py-2 pe-3"><bdi>{nameOf(r.comp.address)}</bdi></td>
-                      <td className="pe-3 text-end" dir="ltr">{signed(r.sqftAdj)}</td><td className="pe-3 text-end" dir="ltr">{signed(r.bedAdj)}</td>
-                      <td className="pe-3 text-end" dir="ltr">{signed(r.bathAdj)}</td><td className="pe-3 text-end" dir="ltr">{signed(r.ageAdj)}</td>
+                      <td className="pe-3 text-end" dir="ltr">{signed(r.sqftAdj)}</td>{!land && <td className="pe-3 text-end" dir="ltr">{signed(r.bedAdj)}</td>}
+                      {!land && <td className="pe-3 text-end" dir="ltr">{signed(r.bathAdj)}</td>}{!land && <td className="pe-3 text-end" dir="ltr">{signed(r.ageAdj)}</td>}
                       <td className="pe-3 text-end" dir="ltr">{signed(r.comp.otherAdj)}</td><td className="text-end font-semibold" dir="ltr">{signed(r.netAdj)}</td>
                     </tr>
                   ))}
@@ -377,7 +381,7 @@ export default function ReportPage() {
               </table>
             </div>
             <p className="mt-4 text-sm">
-              {rich("method.rates", { sqft: usd(project.rates.perSqft), bed: usd(project.rates.perBed), bath: usd(project.rates.perBath), year: usd(project.rates.perYear) }, bold)}
+              {rich(lk("method.rates"), { sqft: usd(project.rates.perSqft), bed: usd(project.rates.perBed), bath: usd(project.rates.perBath), year: usd(project.rates.perYear) }, bold)}
             </p>
             <p className="mt-1 text-sm">
               <strong>{t("method.basisLabel")}</strong>{" "}

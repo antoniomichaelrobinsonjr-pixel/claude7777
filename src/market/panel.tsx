@@ -8,7 +8,7 @@ import { UpgradeNotice } from "@/billing/ui";
 import { countryName } from "./countries";
 import { driftSince, latestPoint, yearOnYear, type IndexPoint } from "./series";
 
-type State =
+export type MarketState =
   | { kind: "loading" }
   | { kind: "ready"; series: IndexPoint[]; updatedAt: string; source: string }
   | { kind: "none" }
@@ -16,8 +16,8 @@ type State =
   | { kind: "locked" };
 
 /** Fetch a country's index from our own API (which checks the plan), sending the sign-in token when there is one. */
-function useMarket(country: string | undefined, enabled: boolean): State | null {
-  const [state, setState] = useState<State | null>(null);
+export function useMarket(country: string | undefined, enabled: boolean): MarketState | null {
+  const [state, setState] = useState<MarketState | null>(null);
   useEffect(() => {
     if (!country || !enabled) { setState(null); return; }
     let cancelled = false;

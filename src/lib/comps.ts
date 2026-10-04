@@ -10,8 +10,14 @@ export interface GeoPoint {
   precise: boolean;
 }
 
+/** What is being priced. A home is sized in square feet; land is sized in acres and has no beds, baths or age. */
+export type PropertyKind = "home" | "land";
+
 export interface Subject {
   address: string;
+  /** Home or land; missing means home. */
+  kind?: PropertyKind;
+  /** Size: square feet for a home, acres for land. */
   sqft: number;
   beds: number;
   baths: number;
@@ -62,9 +68,22 @@ export interface Project {
   ratesBasis?: string;
   /** Relative importance of each reliability check (0-10). Missing = 1 (equal weighting). */
   checkWeights?: Partial<Record<"count" | "recency" | "proximity" | "similarity" | "consistency", number>>;
+  /** The price being asked (buyer) or planned (seller), for the audience reports. */
+  askingPrice?: number;
+  /** Seller costs in percent of the price, and any loan to pay off, for the net-proceeds estimate. */
+  sellerCosts?: { agentPct: number; otherPct: number; payoff: number };
+  /** What the owner paid and when, for the ownership report. */
+  ownership?: { purchasePrice: number; purchaseDate: string; improvements: number };
+  /** Annual growth rates (percent) for the low, middle and high scenarios in the ownership report. */
+  growth?: [number, number, number];
 }
 
 export const DEFAULT_RATES: Rates = { perSqft: 60, perBed: 5000, perBath: 7500, perYear: 500 };
+/** Placeholder rates for land: only the size rate (dollars per acre) is used. */
+export const DEFAULT_LAND_RATES: Rates = { perSqft: 8000, perBed: 0, perBath: 0, perYear: 0 };
+
+export const isLand = (s: { kind?: PropertyKind }) => s.kind === "land";
+export const defaultRatesFor = (s: { kind?: PropertyKind }): Rates => ({ ...(isLand(s) ? DEFAULT_LAND_RATES : DEFAULT_RATES) });
 
 export interface AdjustedComp {
   comp: Comp;
@@ -82,9 +101,11 @@ export interface AdjustedComp {
 /** Adjustments move the comp toward the subject: subject better => positive. */
 export function adjustComp(subject: Subject, comp: Comp, rates: Rates): AdjustedComp {
   const sqftAdj = (subject.sqft - comp.sqft) * rates.perSqft;
-  const bedAdj = (subject.beds - comp.beds) * rates.perBed;
-  const bathAdj = (subject.baths - comp.baths) * rates.perBath;
-  const ageAdj = (subject.yearBuilt - comp.yearBuilt) * rates.perYear;
+  // Land has no bedrooms, bathrooms or age: only its size and the manual adjustment count.
+  const land = isLand(subject);
+  const bedAdj = land ? 0 : (subject.beds - comp.beds) * rates.perBed;
+  const bathAdj = land ? 0 : (subject.baths - comp.baths) * rates.perBath;
+  const ageAdj = land ? 0 : (subject.yearBuilt - comp.yearBuilt) * rates.perYear;
   const netAdj = sqftAdj + bedAdj + bathAdj + ageAdj + comp.otherAdj;
   const gross =
     Math.abs(sqftAdj) + Math.abs(bedAdj) + Math.abs(bathAdj) + Math.abs(ageAdj) + Math.abs(comp.otherAdj);
