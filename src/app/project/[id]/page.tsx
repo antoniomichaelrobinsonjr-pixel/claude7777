@@ -196,7 +196,8 @@ export default function ProjectPage() {
           <button onClick={() => { setGuided(!guided); setStep(1); }} className="btn">
             {guided ? "Show all steps" : "Guide me"}
           </button>
-          <button onClick={() => window.print()} className="btn">Print / save PDF</button>
+          <Link href={`/project/${project.id}/report`} className="btn">Investor report</Link>
+                    <button onClick={() => window.print()} className="btn">Print / save PDF</button>
         </div>
       </div>
 
@@ -240,6 +241,9 @@ export default function ProjectPage() {
               <Money label="Per bath" value={project.rates.perBath} onChange={(n) => setRates({ perBath: n })} />
               <Money label="Per year of age" value={project.rates.perYear} onChange={(n) => setRates({ perYear: n })} />
             </div>
+            <label className="field mt-3 block">Where do these rates come from? <span className="font-normal">(shown in the report)</span>
+              <input className="input" placeholder="e.g. paired-sales study, local appraiser, MLS analysis…" value={project.ratesBasis ?? ""} onChange={(e) => set({ ratesBasis: e.target.value })} />
+            </label>
           </section>
 
           {guided && step === 4 && (
@@ -314,6 +318,9 @@ export default function ProjectPage() {
                     <Num label="Year built" value={c.yearBuilt} onChange={(n) => setComp(c.id, { yearBuilt: n })} />
                     <Num label="Distance (mi)" step={0.1} value={c.distanceMi} onChange={(n) => setComp(c.id, { distanceMi: n })} />
                     <Money label="Other adjustment" negative value={c.otherAdj} onChange={(n) => setComp(c.id, { otherAdj: n })} />
+                    <label className="field col-span-2">Source <span className="font-normal">(MLS #, county record…)</span>
+                      <input className="input" placeholder="Shown in the report so the sale can be verified" value={c.source ?? ""} onChange={(e) => setComp(c.id, { source: e.target.value })} />
+                    </label>
                   </div>
                   {c.included && c.salePrice <= 0 && (
                     <p className="mt-4 text-sm" style={{ color: "var(--warn)" }}>Enter a sale price to include this comp in the value.</p>

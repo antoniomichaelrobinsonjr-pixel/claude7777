@@ -19,6 +19,8 @@ export interface Comp {
   /** Manual dollar adjustment for condition, lot, upgrades, etc. */
   otherAdj: number;
   included: boolean;
+  /** Where this sale came from (MLS number, county record, ...). Shown in the report. */
+  source?: string;
 }
 
 /** Dollar value of one unit of difference between subject and comp. */
@@ -36,6 +38,10 @@ export interface Project {
   comps: Comp[];
   rates: Rates;
   updatedAt: string;
+  preparedBy?: string;
+  preparedFor?: string;
+  /** Where the adjustment rates came from (paired sales study, appraiser input, ...). */
+  ratesBasis?: string;
 }
 
 export const DEFAULT_RATES: Rates = { perSqft: 60, perBed: 5000, perBath: 7500, perYear: 500 };
